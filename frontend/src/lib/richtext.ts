@@ -9,6 +9,7 @@ export const DESCRIPTION_MAX = 20000;
 const RENAME: Record<string, string> = {
   p: 'p', div: 'p', br: 'br', b: 'b', strong: 'b', i: 'i', em: 'i', u: 'u', s: 's', strike: 's', del: 's',
   ul: 'ul', ol: 'ol', li: 'li', h1: 'h3', h2: 'h3', h3: 'h3', h4: 'h3', blockquote: 'blockquote', code: 'code', pre: 'pre', a: 'a',
+  table: 'table', thead: 'thead', tbody: 'tbody', tr: 'tr', th: 'th', td: 'td',
 };
 /** Tags whose content is dropped too, not only the tag. */
 const DROP_CONTENT = new Set(['script', 'style', 'head', 'title', 'template', 'iframe', 'object', 'noscript', 'svg', 'math']);

@@ -178,3 +178,12 @@ describe('placeholders in Markdown', () => {
     expect(markdownToHtml('a <script>x()</script> b')).toBe('<p>a  b</p>');
   });
 });
+
+describe('tables in Markdown', () => {
+  it('turns a Markdown table into an HTML table and back', () => {
+    const md = '| Coltura | Ricavo |\n|---|---|\n| Zafferano | **€6.000** |\n| Orto | €800/mese |';
+    const html = markdownToHtml(md);
+    expect(html).toBe('<table><thead><tr><th>Coltura</th><th>Ricavo</th></tr></thead><tbody><tr><td>Zafferano</td><td><b>€6.000</b></td></tr><tr><td>Orto</td><td>€800/mese</td></tr></tbody></table>');
+    expect(htmlToMarkdown(html)).toBe(md);
+  });
+});

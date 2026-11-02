@@ -1,7 +1,7 @@
 // Light or dark, chosen with the button in the header and remembered on this browser.
 // Light is the default; the dark theme never starts by itself from the computer's setting.
 export type Theme = 'light' | 'dark';
-export const THEME_KEY = 'scm-theme';
+export const THEME_KEY = 'farm-theme';
 
 export function readTheme(storage: { getItem(k: string): string | null } | null): Theme {
   try { return storage?.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; } catch { return 'light'; }

@@ -5,16 +5,16 @@ type Cmd = { cmd: string; arg?: string; label: string; title: string; icon: Reac
 const B = (s: string) => <b>{s}</b>;
 const COMMANDS: Cmd[][] = [
   [
-    { cmd: 'bold', label: 'Bold', title: 'Bold (Ctrl+B)', icon: B('B') },
-    { cmd: 'italic', label: 'Italic', title: 'Italic (Ctrl+I)', icon: <i style={{ fontFamily: 'Georgia, serif' }}>I</i> },
-    { cmd: 'underline', label: 'Underline', title: 'Underline (Ctrl+U)', icon: <u>U</u> },
-    { cmd: 'strikeThrough', label: 'Strikethrough', title: 'Strikethrough', icon: <s>S</s> },
+    { cmd: 'bold', label: 'Grassetto', title: 'Grassetto (Ctrl+B)', icon: B('B') },
+    { cmd: 'italic', label: 'Corsivo', title: 'Corsivo (Ctrl+I)', icon: <i style={{ fontFamily: 'Georgia, serif' }}>I</i> },
+    { cmd: 'underline', label: 'Sottolineato', title: 'Sottolineato (Ctrl+U)', icon: <u>U</u> },
+    { cmd: 'strikeThrough', label: 'Barrato', title: 'Barrato', icon: <s>S</s> },
   ],
   [
-    { cmd: 'formatBlock', arg: 'h3', label: 'Heading', title: 'Heading', icon: B('H') },
-    { cmd: 'insertUnorderedList', label: 'Bulleted list', title: 'Bulleted list', icon: <span aria-hidden>• ≡</span> },
-    { cmd: 'insertOrderedList', label: 'Numbered list', title: 'Numbered list', icon: <span aria-hidden>1. ≡</span> },
-    { cmd: 'formatBlock', arg: 'blockquote', label: 'Quote', title: 'Quote', icon: <span aria-hidden>❝</span> },
+    { cmd: 'formatBlock', arg: 'h3', label: 'Titolo', title: 'Titolo', icon: B('H') },
+    { cmd: 'insertUnorderedList', label: 'Elenco puntato', title: 'Elenco puntato', icon: <span aria-hidden>• ≡</span> },
+    { cmd: 'insertOrderedList', label: 'Elenco numerato', title: 'Elenco numerato', icon: <span aria-hidden>1. ≡</span> },
+    { cmd: 'formatBlock', arg: 'blockquote', label: 'Citazione', title: 'Citazione', icon: <span aria-hidden>❝</span> },
   ],
 ];
 
@@ -126,12 +126,12 @@ export function RichTextEditor({ id, label, value, onChange, placeholder, max = 
         <span className="rte-group">
           <button type="button" className="rte-btn" title="Link" aria-label="Link" onMouseDown={(e) => e.preventDefault()} onClick={startLink}>🔗</button>
           {onUpload && (<>
-            <button type="button" className="rte-btn" title="Add a screenshot, video or PDF (you can also paste or drop it in the text)" aria-label="Add a file"
+            <button type="button" className="rte-btn" title="Aggiungi una foto, un video o un PDF (puoi anche incollarlo o trascinarlo nel testo)" aria-label="Add a file"
               disabled={!!uploading} onMouseDown={(e) => e.preventDefault()} onClick={() => { keepSelection(); picker.current?.click(); }}>📎</button>
             <input ref={picker} type="file" hidden accept="image/*,video/*,application/pdf" multiple aria-label="Choose files"
               onChange={(e) => { const fs = [...(e.target.files || [])]; e.target.value = ''; void upload(fs); }} />
           </>)}
-          <button type="button" className="rte-btn" title="Clear formatting" aria-label="Clear formatting" onMouseDown={(e) => e.preventDefault()}
+          <button type="button" className="rte-btn" title="Togli la formattazione" aria-label="Clear formatting" onMouseDown={(e) => e.preventDefault()}
             onClick={() => { area.current?.focus(); document.execCommand('removeFormat'); document.execCommand('formatBlock', false, 'p'); document.execCommand('unlink'); emit(); }}>⌫</button>
         </span>
       </div>

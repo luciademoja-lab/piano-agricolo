@@ -2,33 +2,27 @@ import { describe, it, expect } from 'vitest';
 import { withRefresh } from './refresh';
 import type { Repo } from './repo';
 
-describe('withRefresh (the board updates right after your own changes, even without realtime)', () => {
-  const calls: string[] = [];
+describe('withRefresh (the page updates right after your own changes, even without realtime)', () => {
   const base = {
     mode: 'demo',
-    async load() { calls.push('load'); return {}; },
-    async loadHoursHistory() { return { versions: [], worked: [] }; },
-    async bookShift() { calls.push('book'); return 'id'; },
-    async createTask() { calls.push('task'); return 't'; },
-    async markNotificationsSeen() { calls.push('seen'); },
-    async setMyTimezone() { calls.push('tz'); },
-    async deleteShift() { throw new Error('nope'); },
+    async loadFarm() { return {}; },
+    async loadPeople() { return {}; },
+    async addPlanting() { return 'p1'; },
+    async setTaskDone() { /* ok */ },
+    async deleteTask() { throw new Error('nope'); },
     subscribe() { return () => undefined; },
   } as unknown as Repo;
 
   it('refreshes after every successful write, and passes the result through', async () => {
     let refreshed = 0;
     const repo = withRefresh(base, () => { refreshed++; });
-    expect(await repo.bookShift(1, 2)).toBe('id');
-    expect(await repo.createTask({ title: 'x', description: '', priority: 'low', estimateMinutes: 1 }, [])).toBe('t');
-    await repo.markNotificationsSeen();
-    await repo.setMyTimezone('Europe/Rome');
-    expect(refreshed).toBe(4);
-    await repo.load(0, 1);
-    await repo.loadHoursHistory(0, 1);
-    expect(refreshed).toBe(4); // reads do not trigger a refresh (or the board would reload forever)
-    await expect(repo.deleteShift('x')).rejects.toThrow('nope');
-    expect(refreshed).toBe(4); // failures neither
-    expect(repo.mode).toBe('demo');
+    expect(await repo.addPlanting({ cropId: 'x', m2: 1, heads: null, start: '2026-11-02', soldPct: 100, note: '' })).toBe('p1');
+    await repo.setTaskDone('t', true);
+    expect(refreshed).toBe(2);
+    await repo.loadFarm();
+    await repo.loadPeople();
+    expect(refreshed).toBe(2); // reads never refresh (or the page would reload forever)
+    await expect(repo.deleteTask('x')).rejects.toThrow('nope');
+    expect(refreshed).toBe(2);
   });
 });

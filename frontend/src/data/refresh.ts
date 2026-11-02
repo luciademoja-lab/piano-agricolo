@@ -3,7 +3,7 @@ import type { Repo } from './repo';
 const READS = new Set(['mode', 'session', 'signIn', 'signOut', 'onAuthChange', 'subscribe', 'ruleFileUrls', 'uploadRuleFile']);
 const isRead = (prop: string) => READS.has(prop) || prop.startsWith('load');
 
-/** Wraps a repository so the board reloads right after each successful change made here. */
+/** Wraps a repository so the page reloads right after each successful change made here. */
 export function withRefresh(repo: Repo, refresh: () => void): Repo {
   return new Proxy(repo, {
     get(target, prop, receiver) {

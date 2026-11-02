@@ -43,7 +43,7 @@ export function usedSpace(plantings: Planting[], catalog: Catalog, space: Space)
 export const spaceAvailable = (s: Settings, space: Space) => (space === 'outdoor' ? s.outdoorM2 : s.indoorM2);
 
 export type Check = { errors: string[]; warnings: string[] };
-const fmt = (n: number) => n.toLocaleString('it-IT', { maximumFractionDigits: 2, useGrouping: 'always' } as Intl.NumberFormatOptions);
+const fmt = (n: number) => n.toLocaleString('it-IT', { maximumFractionDigits: 2, useGrouping: 'always' } as unknown as Intl.NumberFormatOptions);
 
 /** Whether a crop can go into the plan: errors stop it, warnings are shown and let it through. */
 export function checkPlanting(input: PlantingInput, farm: Pick<Farm, 'catalog' | 'settings' | 'plantings'>, today: DateStr): Check {

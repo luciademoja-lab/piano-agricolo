@@ -1,8 +1,7 @@
-// Rules: the company rules and documentation. Everyone reads them; admins edit them here or with their own Claude
-// ("Update with Claude": copy, paste into Claude, paste the answer back). See lib/rules.ts.
+// Regolamenti: leggi, regole e fonti del progetto. Tutti li leggono; l'admin li modifica qui o con il proprio Claude
+// ("Aggiorna con Claude": copia, incolla in Claude, incolla la risposta). Vedi lib/rules.ts.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Repo } from '../data/repo';
-import type { Profile } from '../lib/shifts';
+import type { Profile, Repo } from '../data/repo';
 import { sanitizeHtml } from '../lib/richtext';
 import {
   FILE_MAX, LOG_LABEL, RULE_BODY_MAX, RULE_STATUSES, RULE_STATUS_LABEL, exportForClaude, fileRefs, highlight, isImage, isVideo, orderedSections,
@@ -15,8 +14,8 @@ import { errorText } from './errors';
 import { rulesSeed } from '../data/rulesSeed';
 
 const ROME = 'Europe/Rome';
-const dateLabel = (ms: number) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: ROME });
-const timeLabel = (ms: number) => new Date(ms).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: ROME });
+const dateLabel = (ms: number) => new Date(ms).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric', timeZone: ROME });
+const timeLabel = (ms: number) => new Date(ms).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: ROME });
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const anchor = (id: string) => 'rule-' + id;
 
@@ -34,7 +33,7 @@ export function RulesPage({ repo, me, profiles, refreshKey }: { repo: Repo; me: 
 
   useEffect(() => {
     let alive = true;
-    repo.loadRules().then((r) => { if (alive) { setRules(r); setError(null); } }, (e) => { if (alive) setError(errorText(e, ROME)); });
+    repo.loadRules().then((r) => { if (alive) { setRules(r); setError(null); } }, (e) => { if (alive) setError(errorText(e)); });
     return () => { alive = false; };
   }, [repo, refreshKey]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t); }, [toast]);
@@ -68,49 +67,49 @@ export function RulesPage({ repo, me, profiles, refreshKey }: { repo: Repo; me: 
   const jump = (id: string) => { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', '#' + id); };
   const copyLink = async (r: Rule) => {
     const link = `${location.origin}${location.pathname}#${anchor(r.id)}`;
-    try { await navigator.clipboard.writeText(link); setToast(`Link to “${r.title}” copied.`); } catch { setToast(link); }
+    try { await navigator.clipboard.writeText(link); setToast(`Link a “${r.title}” copiato.`); } catch { setToast(link); }
   };
   const apply = useCallback(async (changes: RuleChange[], via: 'editor' | 'claude') => {
     const res = await repo.applyRuleChanges(changes, via);
-    const parts = [res.created && `${res.created} added`, res.changed && `${res.changed} changed`, res.deleted && `${res.deleted} deleted`].filter(Boolean);
-    setToast(parts.length ? `Rules updated: ${parts.join(', ')}.` : 'Nothing to change.');
+    const parts = [res.created && `${res.created} aggiunte`, res.changed && `${res.changed} cambiate`, res.deleted && `${res.deleted} cancellate`].filter(Boolean);
+    setToast(parts.length ? `Regolamenti aggiornati: ${parts.join(', ')}.` : 'Niente da cambiare.');
     setRules(await repo.loadRules());
   }, [repo]);
 
   return (
     <section className="rules" aria-labelledby="rules-h">
       <div className="panel-head">
-        <div><div className="eyebrow">Company</div><h2 id="rules-h">Rules</h2></div>
+        <div><div className="eyebrow">Progetto</div><h2 id="rules-h">Regolamenti</h2></div>
         <div className="rules-actions">
-          <button className="btn" type="button" onClick={() => setDialog({ kind: 'history' })}>History</button>
+          <button className="btn" type="button" onClick={() => setDialog({ kind: 'history' })}>Storico</button>
           {isAdmin && <>
-            <button className="btn" type="button" onClick={() => setDialog({ kind: 'sections' })}>Sections</button>
-            <button className="btn" type="button" onClick={() => setDialog({ kind: 'claude' })}>✦ Update with Claude</button>
-            <button className="btn primary" type="button" onClick={() => setDialog({ kind: 'edit', rule: null })}>+ New rule</button>
+            <button className="btn" type="button" onClick={() => setDialog({ kind: 'sections' })}>Sezioni</button>
+            <button className="btn" type="button" onClick={() => setDialog({ kind: 'claude' })}>✦ Aggiorna con Claude</button>
+            <button className="btn primary" type="button" onClick={() => setDialog({ kind: 'edit', rule: null })}>+ Nuova regola</button>
           </>}
         </div>
       </div>
       <p className="note">
-        How we work, in one place. <span className="st-dot confirmed" /> Confirmed · <span className="st-dot to_confirm" /> To confirm (follow it, and ask if it looks wrong)
-        {lastChange && <> · last change {timeLabel(lastChange.at)}</>}
-        {!isAdmin && '. Only admins can change this page: if something is wrong or missing, tell an admin on Slack.'}
+        Cosa dicono leggi, uffici e fonti, in un posto solo. <span className="st-dot confirmed" /> Confermata per iscritto · <span className="st-dot to_confirm" /> Da confermare con l'ufficio giusto
+        {lastChange && <> · ultima modifica {timeLabel(lastChange.at)}</>}
+        {!isAdmin && '. Solo l’admin può cambiare questa pagina.'}
       </p>
       {error && <p className="err" role="alert">{error}</p>}
-      {!rules && !error && <p className="muted">Loading…</p>}
+      {!rules && !error && <p className="muted">Caricamento…</p>}
 
       {rules && (<>
         <div className="rules-search">
-          <input type="search" placeholder="Search the rules: milestones, invites, Slack, warm-up…" aria-label="Search the rules" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input type="search" placeholder="Cerca: IVA, uova, humus, bando, SIAN…" aria-label="Cerca nei regolamenti" value={q} onChange={(e) => setQ(e.target.value)} />
           {outdatedCount > 0 && (
-            <label className="check"><input type="checkbox" checked={showOutdated} onChange={(e) => setShowOutdated(e.target.checked)} /> Show outdated ({outdatedCount})</label>
+            <label className="check"><input type="checkbox" checked={showOutdated} onChange={(e) => setShowOutdated(e.target.checked)} /> Mostra superate ({outdatedCount})</label>
           )}
-          <span className="note" aria-live="polite">{searching ? `${shown.size} ${shown.size === 1 ? 'rule' : 'rules'} found` : `${shown.size} rules${toConfirm ? ` · ${toConfirm} to confirm` : ''}`}</span>
+          <span className="note" aria-live="polite">{searching ? `${shown.size} ${shown.size === 1 ? 'regola trovata' : 'regole trovate'}` : `${shown.size} regole${toConfirm ? ` · ${toConfirm} da confermare` : ''}`}</span>
         </div>
 
         <div className="rules-layout">
-          <nav className="rules-menu" aria-label="Rule sections">
+          <nav className="rules-menu" aria-label="Sezioni dei regolamenti">
             <details open={typeof window === 'undefined' || window.innerWidth > 820}>
-              <summary>Sections</summary>
+              <summary>Sezioni</summary>
               <ol>
                 {sections.filter((s) => s.rules.length || !searching).map((s) => (
                   <li key={s.id}>
@@ -129,14 +128,14 @@ export function RulesPage({ repo, me, profiles, refreshKey }: { repo: Repo; me: 
           </nav>
 
           <div className="rules-content">
-            {searching && !shown.size && <p className="empty">No rule matches “{q.trim()}”. Try another word{outdatedCount && !showOutdated ? ', or show the outdated rules' : ''}.</p>}
+            {searching && !shown.size && <p className="empty">Nessuna regola per “{q.trim()}”. Prova un'altra parola{outdatedCount && !showOutdated ? ', o mostra le regole superate' : ''}.</p>}
             {!rules.sections.length && (
               <div className="panel">
-                <p className="empty">No rules yet.{isAdmin && ' Start with “+ New rule” or “Update with Claude”, or load the first version.'}</p>
+                <p className="empty">Ancora nessuna regola.{isAdmin && ' Inizia con “+ Nuova regola” o “Aggiorna con Claude”, o carica la prima versione.'}</p>
                 {isAdmin && (
                   <div className="actions start">
-                    <button className="btn primary" type="button" onClick={() => apply(rulesSeed(), 'editor').catch((e) => setError(errorText(e, ROME)))}>
-                      Load the first version (gathered from Slack and the guides, 27 Oct)
+                    <button className="btn primary" type="button" onClick={() => apply(rulesSeed(), 'editor').catch((e) => setError(errorText(e)))}>
+                      Carica la prima versione (schema PDF e regole trovate il 2 novembre)
                     </button>
                   </div>
                 )}
@@ -146,9 +145,9 @@ export function RulesPage({ repo, me, profiles, refreshKey }: { repo: Repo; me: 
               <section key={s.id} className="rules-section" id={'sec-' + s.id} aria-labelledby={'sec-h-' + s.id}>
                 <div className="rules-section-head">
                   <h3 id={'sec-h-' + s.id}>{s.title}</h3>
-                  {isAdmin && !searching && <button type="button" className="linkbtn" onClick={() => setDialog({ kind: 'edit', rule: null, section: s.id })}>+ Add a rule here</button>}
+                  {isAdmin && !searching && <button type="button" className="linkbtn" onClick={() => setDialog({ kind: 'edit', rule: null, section: s.id })}>+ Aggiungi una regola qui</button>}
                 </div>
-                {!s.rules.length && <p className="empty">No rules in this section yet.</p>}
+                {!s.rules.length && <p className="empty">Nessuna regola in questa sezione.</p>}
                 {s.rules.map((r) => (
                   <RuleCard key={r.id} rule={r} q={q} urls={urls} searching={searching} canEdit={isAdmin}
                     editor={r.updatedBy ? profiles[r.updatedBy]?.fullName : undefined}
@@ -193,17 +192,17 @@ function RuleCard({ rule: r, q, urls, searching, canEdit, editor, onTag, onCopyL
         <h4 id={anchor(r.id) + '-h'}><Marked text={r.title} q={q} /></h4>
         <span className={'pill rule-status ' + r.status}>{RULE_STATUS_LABEL[r.status]}</span>
         <span className="rule-tools">
-          <button type="button" className="rte-btn" title="Copy a link to this rule" aria-label={`Copy a link to “${r.title}”`} onClick={onCopyLink}>🔗</button>
-          {canEdit && <button type="button" className="btn small" onClick={onEdit}>Edit</button>}
+          <button type="button" className="rte-btn" title="Copia il link a questa regola" aria-label={`Copia il link a “${r.title}”`} onClick={onCopyLink}>🔗</button>
+          {canEdit && <button type="button" className="btn small" onClick={onEdit}>Modifica</button>}
         </span>
       </div>
       {full ? <RuleBody html={r.body} urls={urls} /> : <p className="rule-snippet"><Marked text={snippet(r, q)} q={q} /></p>}
       <div className="rule-foot">
-        {searching && <button type="button" className="linkbtn" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'Show less' : 'Show the whole rule'}</button>}
+        {searching && <button type="button" className="linkbtn" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'Mostra meno' : 'Mostra tutta la regola'}</button>}
         {r.tags.map((t) => <button key={t} type="button" className="linkbtn tagbtn" onClick={() => onTag(t)}>#{t}</button>)}
         <span className="sub">
-          {r.source && (r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer">Source: {r.source}</a> : <>Source: {r.source}</>)}
-          {r.source && ' · '}Updated {dateLabel(r.updatedAt)}{editor ? ` by ${editor.split(' ')[0]}` : ''}
+          {r.source && (r.sourceUrl ? <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer">Fonte: {r.source}</a> : <>Fonte: {r.source}</>)}
+          {r.source && ' · '}Aggiornata il {dateLabel(r.updatedAt)}{editor ? ` da ${editor.split(' ')[0]}` : ''}
         </span>
       </div>
     </article>
@@ -231,8 +230,8 @@ function RuleEditor({ repo, rules, rule, section, urls, onUrls, onClose, onSave 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function uploadFile(file: File): Promise<string> {
-    if (file.size > FILE_MAX) throw new Error(`“${file.name}” is too big (100 MB at most).`);
-    if (!/^(image|video)\//.test(file.type) && file.type !== 'application/pdf') throw new Error(`“${file.name}”: only images, videos and PDFs can be added.`);
+    if (file.size > FILE_MAX) throw new Error(`“${file.name}” è troppo grande (100 MB al massimo).`);
+    if (!/^(image|video)\//.test(file.type) && file.type !== 'application/pdf') throw new Error(`“${file.name}”: si possono aggiungere solo immagini, video e PDF.`);
     const name = file.name || (file.type.startsWith('image/') ? 'screenshot.png' : 'file');
     const path = await repo.uploadRuleFile(file, name);
     const got = await repo.ruleFileUrls([path]);
@@ -247,68 +246,68 @@ function RuleEditor({ repo, rules, rule, section, urls, onUrls, onClose, onSave 
   async function save() {
     setErr(null);
     const t = title.trim();
-    if (!t) return setErr('Give the rule a title.');
+    if (!t) return setErr('Dai un titolo alla regola.');
     const changes: RuleChange[] = [];
     let secId = sec;
     if (sec === NEW) {
       const n = newSec.trim();
-      if (!n) return setErr('Give the new section a name.');
+      if (!n) return setErr('Dai un nome alla nuova sezione.');
       secId = uniqueId(slugify(n), rules.sections.map((s) => s.id));
       changes.push({ op: 'upsert_section', id: secId, title: n });
     }
     const html = sanitizeHtml(withFileRefs(body, linkMap.current), { media: true });
-    if (html.length > RULE_BODY_MAX) return setErr('The text is too long. Split it into two rules.');
+    if (html.length > RULE_BODY_MAX) return setErr('Il testo è troppo lungo. Dividilo in due regole.');
     const url = sourceUrl.trim();
-    if (url && !/^https?:\/\//i.test(url)) return setErr('The source link must start with https://');
+    if (url && !/^https?:\/\//i.test(url)) return setErr('Il link della fonte deve iniziare con https://');
     changes.push({
       op: 'upsert_rule', id: rule?.id ?? uniqueId(slugify(t), rules.rules.map((r) => r.id)), section: secId, title: t, body: html, status,
       tags: tags.split(/[,#]/).map((x) => x.trim().toLowerCase()).filter(Boolean), source: source.trim(), source_url: url || null,
     });
     setBusy(true);
-    try { await onSave(changes); onClose(); } catch (e) { setErr(errorText(e, ROME)); setBusy(false); }
+    try { await onSave(changes); onClose(); } catch (e) { setErr(errorText(e)); setBusy(false); }
   }
   async function remove() {
     if (!rule) return;
     setBusy(true);
-    try { await onSave([{ op: 'delete_rule', id: rule.id }]); onClose(); } catch (e) { setErr(errorText(e, ROME)); setBusy(false); }
+    try { await onSave([{ op: 'delete_rule', id: rule.id }]); onClose(); } catch (e) { setErr(errorText(e)); setBusy(false); }
   }
 
   return (
-    <Modal onClose={onClose} wide label={rule ? `Edit “${rule.title}”` : 'New rule'} className="rule-modal">
-      <h2>{rule ? 'Edit rule' : 'New rule'}</h2>
-      <Field label="Title" htmlFor="rule-title"><input id="rule-title" type="text" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Invitations per post" /></Field>
+    <Modal onClose={onClose} wide label={rule ? `Modifica “${rule.title}”` : 'Nuova regola'} className="rule-modal">
+      <h2>{rule ? 'Modifica regola' : 'Nuova regola'}</h2>
+      <Field label="Titolo" htmlFor="rule-title"><input id="rule-title" type="text" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} placeholder="es. Esonero IVA" /></Field>
       <div className="fields">
-        <Field label="Section" htmlFor="rule-sec">
+        <Field label="Sezione" htmlFor="rule-sec">
           <select id="rule-sec" value={sec} onChange={(e) => setSec(e.target.value)}>
             {sections.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-            <option value={NEW}>+ New section…</option>
+            <option value={NEW}>+ Nuova sezione…</option>
           </select>
         </Field>
-        {sec === NEW && <Field label="New section" htmlFor="rule-newsec"><input id="rule-newsec" type="text" maxLength={80} value={newSec} onChange={(e) => setNewSec(e.target.value)} /></Field>}
-        <Field label="Status" htmlFor="rule-status">
+        {sec === NEW && <Field label="Nuova sezione" htmlFor="rule-newsec"><input id="rule-newsec" type="text" maxLength={80} value={newSec} onChange={(e) => setNewSec(e.target.value)} /></Field>}
+        <Field label="Stato" htmlFor="rule-status">
           <select id="rule-status" value={status} onChange={(e) => setStatus(e.target.value as RuleStatus)}>
             {RULE_STATUSES.map((s) => <option key={s} value={s}>{RULE_STATUS_LABEL[s]}</option>)}
           </select>
         </Field>
-        <Field label="Tags (comma between them)" htmlFor="rule-tags"><input id="rule-tags" type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="upwork, invites" /></Field>
+        <Field label="Tag (separati da virgola)" htmlFor="rule-tags"><input id="rule-tags" type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="iva, fisco" /></Field>
       </div>
       <div className="field">
         <label htmlFor="rule-body">Text</label>
-        <RichTextEditor id="rule-body" label="Text of the rule" value={initial} onChange={setBody} max={RULE_BODY_MAX} onUpload={uploadFile}
-          placeholder="What to do, step by step. Paste or drop screenshots and videos here, or use 📎." />
+        <RichTextEditor id="rule-body" label="Testo della regola" value={initial} onChange={setBody} max={RULE_BODY_MAX} onUpload={uploadFile}
+          placeholder="Cosa dice, passo per passo. Incolla o trascina qui foto, PDF e video, o usa 📎." />
       </div>
       <div className="fields two">
-        <Field label="Source: who said it, where, when" htmlFor="rule-source"><input id="rule-source" type="text" maxLength={300} value={source} onChange={(e) => setSource(e.target.value)} placeholder="Max, #managers-updates, 26 Oct" /></Field>
-        <Field label="Source link" htmlFor="rule-url"><input id="rule-url" type="text" inputMode="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://sophia-system.slack.com/archives/…" /></Field>
+        <Field label="Fonte: chi lo dice, dove, quando" htmlFor="rule-source"><input id="rule-source" type="text" maxLength={300} value={source} onChange={(e) => setSource(e.target.value)} placeholder="SIAN ASP Reggio Calabria, email del 10 nov" /></Field>
+        <Field label="Link della fonte" htmlFor="rule-url"><input id="rule-url" type="text" inputMode="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://…" /></Field>
       </div>
       {err && <p className="err" role="alert">{err}</p>}
       <div className="actions">
         {rule && (confirmDelete
-          ? <><span className="note">Delete it for everyone?</span><button className="btn danger" type="button" disabled={busy} onClick={remove}>Yes, delete</button></>
-          : <button className="btn danger" type="button" disabled={busy} onClick={() => setConfirmDelete(true)} title="Prefer “Outdated” to keep the history visible">Delete</button>)}
+          ? <><span className="note">Cancellarla per tutti?</span><button className="btn danger" type="button" disabled={busy} onClick={remove}>Sì, cancella</button></>
+          : <button className="btn danger" type="button" disabled={busy} onClick={() => setConfirmDelete(true)} title="Meglio “Superata” per tenere visibile cosa è cambiato">Cancella</button>)}
         <span className="spacer" />
-        <button className="btn" type="button" onClick={onClose}>Cancel</button>
-        <button className="btn primary" type="button" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+        <button className="btn" type="button" onClick={onClose}>Annulla</button>
+        <button className="btn primary" type="button" disabled={busy} onClick={save}>{busy ? 'Salvataggio…' : 'Salva'}</button>
       </div>
     </Modal>
   );
@@ -324,7 +323,7 @@ function SectionsEditor({ rules, onClose, onSave }: { rules: Rules; onClose: () 
 
   async function save() {
     setErr(null);
-    if (list.some((s) => !s.gone && !s.title.trim())) return setErr('Every section needs a name.');
+    if (list.some((s) => !s.gone && !s.title.trim())) return setErr('Ogni sezione ha bisogno di un nome.');
     const taken = rules.sections.map((s) => s.id);
     const changes: RuleChange[] = [];
     list.filter((s) => !s.gone).forEach((s, i) => {
@@ -334,37 +333,37 @@ function SectionsEditor({ rules, onClose, onSave }: { rules: Rules; onClose: () 
     });
     list.filter((s) => s.gone && !s.isNew).forEach((s) => changes.push({ op: 'delete_section', id: s.id }));
     setBusy(true);
-    try { await onSave(changes); onClose(); } catch (e) { setErr(errorText(e, ROME)); setBusy(false); }
+    try { await onSave(changes); onClose(); } catch (e) { setErr(errorText(e)); setBusy(false); }
   }
 
   return (
-    <Modal onClose={onClose} label="Sections" className="sections-modal">
+    <Modal onClose={onClose} label="Sezioni" className="sections-modal">
       <h2>Sections</h2>
-      <p className="note">The menu of the Rules page, in this order. A section can be deleted once it has no rules.</p>
+      <p className="note">Il menu dei Regolamenti, in quest'ordine. Una sezione si può cancellare quando non ha più regole.</p>
       <ol className="sections-list">
         {list.map((s, i) => !s.gone && (
           <li key={s.id + i}>
-            <input type="text" aria-label="Section name" value={s.title} maxLength={80} onChange={(e) => set(i, { title: e.target.value })} />
+            <input type="text" aria-label="Nome della sezione" value={s.title} maxLength={80} onChange={(e) => set(i, { title: e.target.value })} />
             <button type="button" className="rte-btn" aria-label={`Move ${s.title} up`} disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
             <button type="button" className="rte-btn" aria-label={`Move ${s.title} down`} disabled={i === list.length - 1} onClick={() => move(i, 1)}>↓</button>
             <button type="button" className="rte-btn" aria-label={`Delete ${s.title}`} disabled={!s.isNew && counts[s.id] > 0}
-              title={!s.isNew && counts[s.id] > 0 ? `It has ${counts[s.id]} rules: move or delete them first` : 'Delete'} onClick={() => set(i, { gone: true })}>✕</button>
+              title={!s.isNew && counts[s.id] > 0 ? `Ha ${counts[s.id]} regole: spostale o cancellale prima` : 'Cancella'} onClick={() => set(i, { gone: true })}>✕</button>
           </li>
         ))}
       </ol>
-      <button type="button" className="btn" onClick={() => setList((l) => [...l, { id: 'new-' + l.length, title: '', isNew: true, gone: false }])}>+ Add a section</button>
+      <button type="button" className="btn" onClick={() => setList((l) => [...l, { id: 'new-' + l.length, title: '', isNew: true, gone: false }])}>+ Aggiungi una sezione</button>
       {err && <p className="err" role="alert">{err}</p>}
       <div className="actions">
-        <button className="btn" type="button" onClick={onClose}>Cancel</button>
-        <button className="btn primary" type="button" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+        <button className="btn" type="button" onClick={onClose}>Annulla</button>
+        <button className="btn primary" type="button" disabled={busy} onClick={save}>{busy ? 'Salvataggio…' : 'Salva'}</button>
       </div>
     </Modal>
   );
 }
 
 const KIND_LABEL: Record<PreviewItem['kind'], string> = {
-  added: 'New rule', changed: 'Changed', deleted: 'Deleted', unchanged: 'No change',
-  section_added: 'New section', section_changed: 'Section changed', section_deleted: 'Section deleted',
+  added: 'Nuova regola', changed: 'Cambiata', deleted: 'Cancellata', unchanged: 'Nessun cambiamento',
+  section_added: 'Nuova sezione', section_changed: 'Sezione cambiata', section_deleted: 'Sezione cancellata',
 };
 
 function ClaudeUpdate({ rules, onClose, onApply }: { rules: Rules; onClose: () => void; onApply: (changes: RuleChange[]) => Promise<void> }) {
@@ -378,11 +377,11 @@ function ClaudeUpdate({ rules, onClose, onApply }: { rules: Rules; onClose: () =
 
   async function copy() {
     const t = text();
-    try { await navigator.clipboard.writeText(t); setCopied('Copied. Now paste it into Claude.'); }
+    try { await navigator.clipboard.writeText(t); setCopied('Copiato. Ora incollalo in Claude.'); }
     catch {
       const blob = new Blob([t], { type: 'text/markdown' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'vik-rules-for-claude.md'; a.click();
-      setCopied('Your browser did not allow copying, so it was downloaded as a file: attach it to Claude.');
+      setCopied('Il browser non ha permesso di copiare, quindi è stato scaricato come file: allegalo a Claude.');
     }
   }
   function check() {
@@ -396,30 +395,30 @@ function ClaudeUpdate({ rules, onClose, onApply }: { rules: Rules; onClose: () =
   async function apply() {
     if (!parsed) return;
     setBusy(true); setErr(null);
-    try { await onApply(parsed.changes); onClose(); } catch (e) { setErr(errorText(e, ROME)); setBusy(false); }
+    try { await onApply(parsed.changes); onClose(); } catch (e) { setErr(errorText(e)); setBusy(false); }
   }
 
   return (
-    <Modal onClose={onClose} wide label="Update with Claude" className="claude-modal">
-      <h2>✦ Update with Claude</h2>
-      <p className="note">Use your own Claude (claude.ai or the app): nothing to install. Nothing changes until you press “Apply”.</p>
+    <Modal onClose={onClose} wide label="Aggiorna con Claude" className="claude-modal">
+      <h2>✦ Aggiorna con Claude</h2>
+      <p className="note">Usa il tuo Claude (claude.ai o l'app): niente da installare. Non cambia niente finché non premi “Applica”.</p>
       <ol className="claude-steps">
         <li>
-          <h3>Tell Claude what changed, and copy</h3>
-          <textarea rows={3} aria-label="What changed" value={request} onChange={(e) => setRequest(e.target.value)}
-            placeholder="e.g. Max wrote in #managers-hq that invitations are now 30 per post, and that the first week is no longer $1 more. (Optional: you can also tell Claude in the chat.)" />
-          <div className="actions start"><button className="btn primary" type="button" onClick={copy}>Copy for Claude</button>{copied && <span className="note" role="status">✓ {copied}</span>}</div>
+          <h3>Scrivi cosa è cambiato e copia</h3>
+          <textarea rows={3} aria-label="Cosa è cambiato" value={request} onChange={(e) => setRequest(e.target.value)}
+            placeholder="es. Il SIAN ha risposto per email il 10 novembre: i microgreens venduti vivi non sono germogli. (Facoltativo: puoi dirlo a Claude anche nella chat.)" />
+          <div className="actions start"><button className="btn primary" type="button" onClick={copy}>Copia per Claude</button>{copied && <span className="note" role="status">✓ {copied}</span>}</div>
         </li>
         <li>
-          <h3>Paste it into Claude and send</h3>
-          <p className="note">Any chat with Claude works. If your Claude is connected to Slack, you can add “read Max’s last messages in #managers-updates” and it will find the changes itself.</p>
-          <div className="actions start"><a className="btn" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Open Claude ↗</a></div>
+          <h3>Incollalo in Claude e invia</h3>
+          <p className="note">Va bene qualsiasi chat con Claude. Puoi allegare la risposta dell'ufficio (email o PDF): Claude ne ricava le modifiche.</p>
+          <div className="actions start"><a className="btn" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Apri Claude ↗</a></div>
         </li>
         <li>
-          <h3>Paste Claude’s answer here</h3>
-          <textarea rows={6} aria-label="Claude’s answer" value={answer} onChange={(e) => { setAnswer(e.target.value); setParsed(null); }}
-            placeholder="Paste the whole answer (with the json code block)." className="mono" />
-          <div className="actions start"><button className="btn" type="button" disabled={!answer.trim()} onClick={check}>Check the changes</button></div>
+          <h3>Incolla qui la risposta di Claude</h3>
+          <textarea rows={6} aria-label="Risposta di Claude" value={answer} onChange={(e) => { setAnswer(e.target.value); setParsed(null); }}
+            placeholder="Incolla tutta la risposta (con il blocco di codice json)." className="mono" />
+          <div className="actions start"><button className="btn" type="button" disabled={!answer.trim()} onClick={check}>Controlla le modifiche</button></div>
         </li>
       </ol>
       {err && <p className="err" role="alert">{err}</p>}
@@ -427,7 +426,7 @@ function ClaudeUpdate({ rules, onClose, onApply }: { rules: Rules; onClose: () =
         <div className="claude-preview" aria-live="polite">
           {parsed.summary && <p><b>Claude:</b> {parsed.summary}</p>}
           {parsed.questions.length > 0 && (
-            <div className="callout"><b>Claude has questions</b> (answer them in the chat, then paste the new answer):<ul>{parsed.questions.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
+            <div className="callout"><b>Claude ha delle domande</b> (rispondi nella chat, poi incolla la nuova risposta):<ul>{parsed.questions.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
           )}
           {real.length ? (
             <ul className="preview-list">
@@ -439,14 +438,14 @@ function ClaudeUpdate({ rules, onClose, onApply }: { rules: Rules; onClose: () =
                 </li>
               ))}
             </ul>
-          ) : <p className="empty">No changes in this answer.</p>}
-          {problems.length > 0 && <p className="err">Fix these first: ask Claude to correct them, then paste the new answer.</p>}
+          ) : <p className="empty">Nessuna modifica in questa risposta.</p>}
+          {problems.length > 0 && <p className="err">Prima sistema questi: chiedi a Claude di correggerli, poi incolla la nuova risposta.</p>}
         </div>
       )}
       <div className="actions">
-        <button className="btn" type="button" onClick={onClose}>Close</button>
+        <button className="btn" type="button" onClick={onClose}>Chiudi</button>
         <button className="btn primary" type="button" disabled={!parsed || !real.length || problems.length > 0 || busy} onClick={apply}>
-          {busy ? 'Applying…' : real.length ? `Apply ${real.length} change${real.length === 1 ? '' : 's'}` : 'Apply'}
+          {busy ? 'Applicazione…' : real.length ? `Applica ${real.length} ${real.length === 1 ? 'modifica' : 'modifiche'}` : 'Applica'}
         </button>
       </div>
     </Modal>
@@ -455,22 +454,22 @@ function ClaudeUpdate({ rules, onClose, onApply }: { rules: Rules; onClose: () =
 
 function RulesHistory({ rules, profiles, onClose }: { rules: Rules; profiles: Record<string, Profile>; onClose: () => void }) {
   return (
-    <Modal onClose={onClose} wide label="Rules history">
-      <h2>History</h2>
-      <p className="note">The latest changes to the rules, newest first.</p>
+    <Modal onClose={onClose} wide label="Storico dei regolamenti">
+      <h2>Storico</h2>
+      <p className="note">Le ultime modifiche, dalla più recente.</p>
       <ul className="rules-history">
         {rules.log.map((l) => (
           <li key={l.id}>
             <span className="sub mono">{timeLabel(l.at)}</span>{' '}
-            <b>{l.actor ? profiles[l.actor]?.fullName.split(' ')[0] || 'An admin' : 'Set-up'}</b> {LOG_LABEL[l.action]}{' '}
+            <b>{l.actor ? profiles[l.actor]?.fullName.split(' ')[0] || 'L’admin' : 'Impostazione iniziale'}</b> {LOG_LABEL[l.action]}{' '}
             {l.action.startsWith('section') ? <i>{l.title}</i> : <a href={'#' + anchor(l.entryId)} onClick={onClose}>{l.title}</a>}
-            {l.fields.length > 0 && <span className="sub"> ({l.fields.map((f) => (f === 'body' ? 'text' : f)).join(', ')})</span>}
-            {l.via === 'claude' && <span className="pill via-claude">with Claude</span>}
+            {l.fields.length > 0 && <span className="sub"> ({l.fields.map((f) => ({ body: 'testo', title: 'titolo', status: 'stato', source: 'fonte', section: 'sezione', tags: 'tag', position: 'posizione' } as Record<string, string>)[f] ?? f).join(', ')})</span>}
+            {l.via === 'claude' && <span className="pill via-claude">con Claude</span>}
           </li>
         ))}
-        {!rules.log.length && <li className="empty">Nothing yet.</li>}
+        {!rules.log.length && <li className="empty">Ancora niente.</li>}
       </ul>
-      <div className="actions"><button className="btn" type="button" onClick={onClose}>Close</button></div>
+      <div className="actions"><button className="btn" type="button" onClick={onClose}>Chiudi</button></div>
     </Modal>
   );
 }

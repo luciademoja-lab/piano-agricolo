@@ -141,4 +141,3 @@ export const THRESHOLDS = {
   hoursMin: 1840,
 };
 
-export const euro = (n: number, digits = 0) => n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: digits, minimumFractionDigits: digits, useGrouping: 'always' } as Intl.NumberFormatOptions);

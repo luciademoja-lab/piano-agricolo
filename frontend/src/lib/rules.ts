@@ -219,7 +219,7 @@ function inline(nodes: Node[]): string {
   }).join('');
 }
 const plain = (nodes: Node[]): string => nodes.map((n) => (typeof n === 'string' ? n : plain(n.kids))).join('');
-const BLOCK = new Set(['p', 'h3', 'ul', 'ol', 'blockquote', 'pre', 'video']);
+const BLOCK = new Set(['p', 'h3', 'ul', 'ol', 'blockquote', 'pre', 'video', 'table']);
 
 /** The editor's HTML as Markdown, for Claude. */
 export function htmlToMarkdown(html: string): string {
@@ -238,6 +238,18 @@ export function htmlToMarkdown(html: string): string {
     } else if (t === 'blockquote') blocks.push(inline(n.kids).trim().split('\n').map((l) => '> ' + l).join('\n'));
     else if (t === 'pre') blocks.push('```\n' + plain(n.kids).replace(/\n$/, '') + '\n```');
     else if (t === 'video') blocks.push(`![video](${n.attrs.src || ''})`);
+    else if (t === 'table') {
+      const rows: Exclude<Node, string>[] = [];
+      const walk = (k: Node) => { if (typeof k === 'string') return; if (k.tag === 'tr') rows.push(k); else k.kids.forEach(walk); };
+      n.kids.forEach(walk);
+      const cells = rows.map((r) => r.kids.filter((c): c is Exclude<Node, string> => typeof c !== 'string' && (c.tag === 'td' || c.tag === 'th'))
+        .map((c) => inline(c.kids).replace(/\n/g, ' ').replace(/\|/g, '\\|').trim()));
+      if (cells.length) {
+        const width = Math.max(...cells.map((c) => c.length));
+        const line = (c: string[]) => '| ' + Array.from({ length: width }, (_, i) => c[i] ?? '').join(' | ') + ' |';
+        blocks.push([line(cells[0]), '|' + Array(width).fill('---').join('|') + '|', ...cells.slice(1).map(line)].join('\n'));
+      }
+    }
   }
   flush();
   return blocks.join('\n\n');
@@ -289,6 +301,17 @@ export function markdownToHtml(md: string): string {
       continue;
     }
     if (!line.trim()) { flush(); continue; }
+    // a table: a header row, a separator row of dashes, then the rows
+    if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1])) {
+      flush();
+      const split = (l: string) => l.trim().replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map((c) => mdInline(c.trim().replace(/\\\|/g, '|')));
+      const head = split(line);
+      const rows: string[][] = [];
+      for (i += 2; i < lines.length && /^\s*\|/.test(lines[i]); i++) rows.push(split(lines[i]));
+      i--;
+      out.push(`<table><thead><tr>${head.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+      continue;
+    }
     let m: RegExpMatchArray | null;
     if ((m = line.match(/^\s*#{1,6}\s+(.*)$/))) { flush(); out.push(`<h3>${mdInline(m[1].trim())}</h3>`); continue; }
     if ((m = line.match(/^\s*([-*+]|\d+[.)])\s+(.*)$/))) {
