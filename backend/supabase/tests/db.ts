@@ -35,7 +35,7 @@ export class TestDb {
   }
 
   static create(): TestDb {
-    const db = new TestDb('rcm_test_' + randomUUID().slice(0, 8));
+    const db = new TestDb('farm_test_' + randomUUID().slice(0, 8));
     psql(BASE_URL, `create database ${db.name};`);
     psql(db.url, readFileSync(join(ROOT, 'tests/auth_stub.sql'), 'utf8'));
     const dir = join(ROOT, 'migrations');
@@ -72,22 +72,13 @@ export class TestDb {
   }
 
   /** Creates a sign-in user the way the admin-users function does (service role). */
-  createUser(username: string, fullName: string, role: 'admin' | 'hm' | 'viewer' = 'hm'): string {
+  createUser(username: string, fullName: string, role: 'admin' | 'viewer' = 'viewer'): string {
     const id = randomUUID();
     psql(this.url, `insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data) values (
-      '${id}', '${username}@rcm.vikstudios.com',
+      '${id}', '${username}@login.piano-agricolo.app',
       '${JSON.stringify({ username, full_name: fullName }).replace(/'/g, "''")}',
       '${JSON.stringify({ role })}');`);
     return id;
-  }
-}
-
-/** Gives an RCM a time zone and the whole week as availability (for tests about other rules). */
-export function alwaysAvailable(db: TestDb, ...ids: string[]): void {
-  const week = JSON.stringify(Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [d, [{ start: 0, end: 1440 }]])));
-  for (const id of ids) {
-    db.exec('super', `update profiles set timezone = coalesce(timezone, 'UTC') where id = '${id}';
-      insert into availability (owner, days) values ('${id}', '${week}') on conflict (owner) do update set days = excluded.days`);
   }
 }
 

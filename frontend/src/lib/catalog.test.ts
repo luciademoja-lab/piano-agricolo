@@ -73,3 +73,12 @@ describe('start windows', () => {
     expect(startRange('2026-11-02')).toEqual({ from: '2024-11-02', to: '2029-11-02' });
   });
 });
+
+describe('the catalogue in the database', () => {
+  it('is the same as the JSON (regenerate with npm run catalog:sql)', async () => {
+    const { readFileSync } = await import('node:fs');
+    // @ts-expect-error plain JavaScript module, no types
+    const gen = await import('../../../scripts/gen-catalog-sql.mjs');
+    expect(readFileSync(gen.CATALOG_SQL, 'utf8')).toBe(gen.catalogSql(readFileSync(gen.CATALOG_JSON, 'utf8')));
+  });
+});

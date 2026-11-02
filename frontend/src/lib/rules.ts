@@ -1,5 +1,5 @@
-// Rules: the company rules and documentation, one page for everyone in the tool.
-// Admins edit them in the page, or in three steps with their own Claude:
+// Regolamenti: leggi, regole e fonti del progetto agricolo, in una pagina.
+// L'admin li modifica nella pagina, o in tre passi con il proprio Claude:
 //   1. "Copy for Claude" copies the whole rulebook (as JSON, texts in Markdown) with instructions and their request,
 //   2. they paste it into any Claude chat (claude.ai, the app, Claude with Slack...),
 //   3. they paste Claude's answer back: the page previews each change and applies them all at once.
@@ -8,7 +8,7 @@ import { FILE_SCHEME, plainText, sanitizeHtml } from './richtext';
 
 export const RULE_STATUSES = ['confirmed', 'to_confirm', 'outdated'] as const;
 export type RuleStatus = (typeof RULE_STATUSES)[number];
-export const RULE_STATUS_LABEL: Record<RuleStatus, string> = { confirmed: 'Confirmed', to_confirm: 'To confirm', outdated: 'Outdated' };
+export const RULE_STATUS_LABEL: Record<RuleStatus, string> = { confirmed: 'Confermata', to_confirm: 'Da confermare', outdated: 'Superata' };
 
 /** The database check on rules_entries.body uses the same number. */
 export const RULE_BODY_MAX = 100000;
@@ -306,11 +306,11 @@ export function markdownToHtml(md: string): string {
 
 // --- Update with Claude ---------------------------------------------------------------------
 
-export const EXPORT_FORMAT = 'vik-rules/1';
-export const CHANGES_FORMAT = 'vik-rules-changes/1';
+export const EXPORT_FORMAT = 'piano-agricolo-regole/1';
+export const CHANGES_FORMAT = 'piano-agricolo-modifiche/1';
 const day = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
-/** Step 1: the text an admin pastes into Claude: what to do, how to answer, and the whole rulebook. */
+/** Step 1: the text the admin pastes into Claude: what to do, how to answer, and the whole rulebook. */
 export function exportForClaude(r: Rules, request: string, today: string): string {
   const book = {
     format: EXPORT_FORMAT,
@@ -322,39 +322,39 @@ export function exportForClaude(r: Rules, request: string, today: string): strin
       })),
     })),
   };
-  const ask = request.trim() || '(The admin will tell you in the next message what changed. Ask them if it is not clear.)';
+  const ask = request.trim() || '(Ti dirò nel prossimo messaggio cosa è cambiato. Chiedimelo se non è chiaro.)';
   return [
-    `# Vik Studios rules: update request (${today})`,
+    `# Regolamenti del piano agricolo: richiesta di aggiornamento (${today})`,
     '',
-    'You are helping an admin of Vik Studios keep the company rules up to date. The rules are the single place where the team checks how things work: recruiting, offers, milestones, payments, onboarding, Slack, the dashboard.',
-    'The current rulebook is at the end of this message, as JSON. Each rule has a status: "confirmed" (an admin or Max confirmed it), "to_confirm" (written down, not confirmed yet) or "outdated" (kept to show what changed).',
+    'Mi aiuti a tenere aggiornati i regolamenti del mio progetto agricolo a Cinquefrondi (Calabria): microgreens, orto, galline, lombrichi, funghi, api, agriturismo. Sono il posto unico dove controllo cosa dicono leggi, uffici e fonti.',
+    'I regolamenti attuali sono in fondo a questo messaggio, in JSON. Ogni regola ha uno stato: "confirmed" (confermata per iscritto da un ufficio o da un professionista), "to_confirm" (trovata in una fonte, non ancora confermata) o "outdated" (superata, tenuta per vedere cosa è cambiato).',
     '',
-    '## What changed',
+    '## Cosa è cambiato',
     ask,
     '',
-    '## How to answer',
-    `Reply with ONE code block marked json and nothing else inside it, in this format ("${CHANGES_FORMAT}"):`,
+    '## Come rispondere',
+    `Rispondi con UN solo blocco di codice marcato json e nient'altro dentro, in questo formato ("${CHANGES_FORMAT}"):`,
     '',
-    `    {"format": "${CHANGES_FORMAT}", "summary": "one sentence on what you changed", "questions": [],`,
+    `    {"format": "${CHANGES_FORMAT}", "summary": "una frase su cosa hai cambiato", "questions": [],`,
     '     "changes": [',
-    '       {"op": "upsert_rule", "id": "invites-per-post", "section": "recruiting", "title": "Invitations per post", "status": "confirmed",',
-    '        "tags": ["upwork"], "source": "Max, #managers-updates, 26 Oct", "source_url": "https://...", "body_md": "Invite **20** freelancers at most per post."},',
-    '       {"op": "upsert_section", "id": "onboarding", "title": "Onboarding"},',
-    '       {"op": "delete_rule", "id": "some-rule"}',
+    '       {"op": "upsert_rule", "id": "esonero-iva", "section": "fisco", "title": "Regime di esonero IVA", "status": "confirmed",',
+    '        "tags": ["iva"], "source": "CAA Coldiretti, email del 12 nov 2026", "source_url": "https://...", "body_md": "Fino a **7.000 €** di volume d\'affari..."},',
+    '       {"op": "upsert_section", "id": "api", "title": "Api"},',
+    '       {"op": "delete_rule", "id": "una-regola"}',
     '     ]}',
     '',
-    'Operations: upsert_rule (create or update a rule), delete_rule, upsert_section (create or rename a section), delete_section (only when it has no rules).',
-    '- Only list what changes. For an existing rule, give its id and only the fields that change. For a new rule give section, title, status and body_md.',
-    '- When you change the text of a rule, give the whole new body_md, not only the new sentence. Markdown: **bold**, *italic*, ### heading, - lists, 1. lists, > quote, [text](url), ![alt](image).',
-    '- Ids: lowercase letters, digits and dashes, unique. Never change the id of an existing rule.',
-    '- A rule that is replaced by a new one: mark the old one "outdated" instead of deleting it, unless the admin asks to delete it.',
-    '- New or changed rules are "to_confirm" unless the admin says Max (or another admin) confirmed them; then "confirmed".',
-    '- Always fill source (who said it, where, when) and source_url (e.g. the Slack message link) when you know them.',
-    '- Keep image, video and file links that start with rules-file: exactly as they are.',
-    '- Write in clear, short English. One rule = one thing people need to do or know.',
-    '- If something is unclear or contradicts the rulebook, do not guess: put your questions in "questions" and leave those changes out.',
+    'Operazioni: upsert_rule (crea o aggiorna una regola), delete_rule, upsert_section (crea o rinomina una sezione), delete_section (solo se non ha regole).',
+    '- Elenca solo ciò che cambia. Per una regola esistente dai il suo id e solo i campi che cambiano. Per una nuova regola dai section, title, status e body_md.',
+    '- Quando cambi il testo di una regola, dai tutto il nuovo body_md, non solo la frase nuova. Markdown: **grassetto**, *corsivo*, ### titolo, - elenchi, 1. elenchi, > citazione, [testo](url).',
+    '- Id: lettere minuscole, cifre e trattini, unici. Non cambiare mai l\'id di una regola esistente.',
+    '- Una regola sostituita da una nuova: segna la vecchia "outdated" invece di cancellarla, a meno che io non chieda di cancellarla.',
+    '- Le regole nuove o cambiate sono "to_confirm", a meno che io non dica che un ufficio o un professionista le ha confermate per iscritto: allora "confirmed".',
+    '- Compila sempre source (chi lo dice, dove, quando) e source_url quando li conosci.',
+    '- Lascia identici i link a immagini, video e file che iniziano con rules-file:.',
+    '- Scrivi in italiano chiaro e breve. Una regola = una cosa da sapere o da fare.',
+    '- Se qualcosa non è chiaro o contraddice i regolamenti, non indovinare: metti le domande in "questions" e lascia fuori quelle modifiche.',
     '',
-    '## The current rulebook',
+    '## I regolamenti attuali',
     '```json',
     JSON.stringify(book, null, 1),
     '```',
@@ -373,33 +373,33 @@ export function parseClaudeReply(text: string): { changes: RuleChange[]; summary
     const a = text.search(/[{[]/), b = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
     raw = a >= 0 && b > a ? text.slice(a, b + 1) : null;
   }
-  if (raw === null) throw new ClaudeReplyError('Claude’s answer has no JSON in it. Ask Claude to answer with the JSON code block, as the instructions say.');
+  if (raw === null) throw new ClaudeReplyError('Nella risposta di Claude non c’è JSON. Chiedi a Claude di rispondere con il blocco di codice JSON, come dicono le istruzioni.');
   let data: unknown;
   try { data = JSON.parse(raw); } catch (e) {
-    throw new ClaudeReplyError(`The JSON in Claude’s answer is not valid JSON (${(e as Error).message}). Copy the whole answer, or ask Claude to send it again.`);
+    throw new ClaudeReplyError(`Il JSON nella risposta di Claude non è valido (${(e as Error).message}). Copia tutta la risposta, o chiedi a Claude di rimandarla.`);
   }
   const obj = (Array.isArray(data) ? { changes: data } : data) as { format?: unknown; changes?: unknown; summary?: unknown; questions?: unknown };
-  if (!obj || typeof obj !== 'object') throw new ClaudeReplyError('Claude’s answer is not a list of changes.');
-  if (obj.format !== undefined && !String(obj.format).startsWith('vik-rules-changes')) {
-    throw new ClaudeReplyError(`This is not a list of changes (format "${String(obj.format)}"). Paste Claude’s answer, not the rulebook you copied.`);
+  if (!obj || typeof obj !== 'object') throw new ClaudeReplyError('La risposta di Claude non è un elenco di modifiche.');
+  if (obj.format !== undefined && !String(obj.format).startsWith('piano-agricolo-modifiche')) {
+    throw new ClaudeReplyError(`Questo non è un elenco di modifiche (formato "${String(obj.format)}"). Incolla la risposta di Claude, non i regolamenti che hai copiato.`);
   }
-  if (!Array.isArray(obj.changes)) throw new ClaudeReplyError('Claude’s answer has no "changes" list.');
+  if (!Array.isArray(obj.changes)) throw new ClaudeReplyError('Nella risposta di Claude manca l’elenco "changes".');
   const changes = obj.changes.map((c, i): RuleChange => {
     const n = i + 1;
-    if (!c || typeof c !== 'object') throw new ClaudeReplyError(`Change ${n} is not an object.`);
+    if (!c || typeof c !== 'object') throw new ClaudeReplyError(`La modifica ${n} non è un oggetto.`);
     const x = c as Record<string, unknown>;
     const op = String(x.op ?? '');
-    if (!(OPS as readonly string[]).includes(op)) throw new ClaudeReplyError(`change ${n}: unknown op "${op}".`);
+    if (!(OPS as readonly string[]).includes(op)) throw new ClaudeReplyError(`modifica ${n}: operazione sconosciuta "${op}".`);
     const id = String(x.id ?? '');
-    if (!ID_RE.test(id)) throw new ClaudeReplyError(`change ${n}: "${id}" is not a valid id (lowercase letters, digits and dashes).`);
+    if (!ID_RE.test(id)) throw new ClaudeReplyError(`modifica ${n}: "${id}" non è un id valido (lettere minuscole, cifre e trattini).`);
     if (op === 'delete_rule' || op === 'delete_section') return { op, id } as RuleChange;
     const out: Record<string, unknown> = { op, id };
     if (x.title !== undefined) out.title = String(x.title).trim();
-    if (x.position !== undefined) { const p = Number(x.position); if (!Number.isInteger(p)) throw new ClaudeReplyError(`change ${n}: position must be a whole number.`); out.position = p; }
+    if (x.position !== undefined) { const p = Number(x.position); if (!Number.isInteger(p)) throw new ClaudeReplyError(`modifica ${n}: la posizione deve essere un numero intero.`); out.position = p; }
     if (op === 'upsert_section') return out as RuleChange;
     if (x.section !== undefined) out.section = String(x.section);
     if (x.status !== undefined) {
-      if (!(RULE_STATUSES as readonly string[]).includes(String(x.status))) throw new ClaudeReplyError(`change ${n}: unknown status "${String(x.status)}" (confirmed, to_confirm or outdated).`);
+      if (!(RULE_STATUSES as readonly string[]).includes(String(x.status))) throw new ClaudeReplyError(`modifica ${n}: stato sconosciuto "${String(x.status)}" (confirmed, to_confirm o outdated).`);
       out.status = x.status;
     }
     if (x.body_md !== undefined) out.body = markdownToHtml(String(x.body_md));
@@ -407,11 +407,11 @@ export function parseClaudeReply(text: string): { changes: RuleChange[]; summary
     if (x.source !== undefined) out.source = String(x.source ?? '').trim();
     if (x.source_url !== undefined) {
       const u = x.source_url === null ? '' : String(x.source_url).trim();
-      if (u && !/^https?:\/\//i.test(u)) throw new ClaudeReplyError(`change ${n}: the source link must start with https://.`);
+      if (u && !/^https?:\/\//i.test(u)) throw new ClaudeReplyError(`modifica ${n}: il link della fonte deve iniziare con https://.`);
       out.source_url = u || null;
     }
     if (x.tags !== undefined) {
-      if (!Array.isArray(x.tags)) throw new ClaudeReplyError(`change ${n}: tags must be a list.`);
+      if (!Array.isArray(x.tags)) throw new ClaudeReplyError(`modifica ${n}: i tag devono essere un elenco.`);
       out.tags = x.tags.map((t) => String(t).trim().toLowerCase()).filter(Boolean);
     }
     return out as RuleChange;
@@ -438,10 +438,10 @@ export function previewChanges(r: Rules, changes: RuleChange[]): PreviewItem[] {
       const s = sections.get(c.id);
       if (!s) {
         sections.set(c.id, { id: c.id, title: c.title || c.id, position: c.position ?? 0 });
-        return { kind: 'section_added', id: c.id, title: c.title || c.id, details: [], problem: c.title ? null : 'A new section needs a title.' };
+        return { kind: 'section_added', id: c.id, title: c.title || c.id, details: [], problem: c.title ? null : 'Una nuova sezione ha bisogno di un titolo.' };
       }
-      const details = c.title !== undefined && c.title !== s.title ? [`renamed: “${s.title}” → “${c.title}”`] : [];
-      if (c.position !== undefined && c.position !== s.position) details.push('moved');
+      const details = c.title !== undefined && c.title !== s.title ? [`rinominata: “${s.title}” → “${c.title}”`] : [];
+      if (c.position !== undefined && c.position !== s.position) details.push('spostata');
       if (c.title !== undefined) s.title = c.title;
       return { kind: details.length ? 'section_changed' : 'unchanged', id: c.id, title: s.title, details, problem: null };
     }
@@ -450,29 +450,29 @@ export function previewChanges(r: Rules, changes: RuleChange[]): PreviewItem[] {
       const left = [...rules.values()].filter((x) => x.section === c.id).length;
       sections.delete(c.id);
       return { kind: 'section_deleted', id: c.id, title: s?.title ?? c.id, details: [],
-        problem: !s ? `There is no section “${c.id}”.` : left ? `“${s.title}” still has ${left} rule${left === 1 ? '' : 's'}: move or delete them first.` : null };
+        problem: !s ? `Non esiste la sezione “${c.id}”.` : left ? `“${s.title}” ha ancora ${left} ${left === 1 ? 'regola' : 'regole'}: spostale o cancellale prima.` : null };
     }
     if (c.op === 'delete_rule') {
       const x = rules.get(c.id);
       rules.delete(c.id);
-      return { kind: 'deleted', id: c.id, title: x?.title ?? c.id, details: [], problem: x ? null : `There is no rule “${c.id}”.` };
+      return { kind: 'deleted', id: c.id, title: x?.title ?? c.id, details: [], problem: x ? null : `Non esiste la regola “${c.id}”.` };
     }
     const old = rules.get(c.id);
-    const missingSection = c.section !== undefined && !sections.has(c.section) ? `There is no section “${c.section}”.` : null;
+    const missingSection = c.section !== undefined && !sections.has(c.section) ? `Non esiste la sezione “${c.section}”.` : null;
     if (!old) {
       const status = c.status || 'to_confirm';
       rules.set(c.id, { id: c.id, section: c.section || '', title: c.title || '', body: c.body || '', status, source: c.source || '', sourceUrl: c.source_url ?? null,
         tags: c.tags || [], position: c.position ?? 0, updatedBy: null, updatedAt: 0 });
-      const problem = !c.section ? 'A new rule needs a section.' : missingSection || (!c.title ? 'A new rule needs a title.' : null);
-      return { kind: 'added', id: c.id, title: c.title || c.id, details: [`in ${c.section ? secTitle(c.section) : '?'}`, `status: ${RULE_STATUS_LABEL[status]}`], problem };
+      const problem = !c.section ? 'Una nuova regola ha bisogno di una sezione.' : missingSection || (!c.title ? 'Una nuova regola ha bisogno di un titolo.' : null);
+      return { kind: 'added', id: c.id, title: c.title || c.id, details: [`in ${c.section ? secTitle(c.section) : '?'}`, `stato: ${RULE_STATUS_LABEL[status]}`], problem };
     }
     const details: string[] = [];
-    if (c.section !== undefined && c.section !== old.section) details.push(`moved to ${secTitle(c.section)}`);
-    if (c.title !== undefined && c.title !== old.title) details.push(`title: “${old.title}” → “${c.title}”`);
-    if (c.body !== undefined && norm(c.body) !== norm(old.body)) details.push('text changed');
-    if (c.status !== undefined && c.status !== old.status) details.push(`status: ${RULE_STATUS_LABEL[old.status]} → ${RULE_STATUS_LABEL[c.status]}`);
-    if ((c.source !== undefined && c.source !== old.source) || (c.source_url !== undefined && (c.source_url || null) !== old.sourceUrl)) details.push('source changed');
-    if (c.tags !== undefined && c.tags.join(',') !== old.tags.join(',')) details.push(`tags: ${c.tags.length ? c.tags.join(', ') : 'none'}`);
+    if (c.section !== undefined && c.section !== old.section) details.push(`spostata in ${secTitle(c.section)}`);
+    if (c.title !== undefined && c.title !== old.title) details.push(`titolo: “${old.title}” → “${c.title}”`);
+    if (c.body !== undefined && norm(c.body) !== norm(old.body)) details.push('testo cambiato');
+    if (c.status !== undefined && c.status !== old.status) details.push(`stato: ${RULE_STATUS_LABEL[old.status]} → ${RULE_STATUS_LABEL[c.status]}`);
+    if ((c.source !== undefined && c.source !== old.source) || (c.source_url !== undefined && (c.source_url || null) !== old.sourceUrl)) details.push('fonte cambiata');
+    if (c.tags !== undefined && c.tags.join(',') !== old.tags.join(',')) details.push(`tag: ${c.tags.length ? c.tags.join(', ') : 'nessuno'}`);
     const next = { ...old, ...(c.section !== undefined && { section: c.section }), ...(c.title !== undefined && { title: c.title }), ...(c.body !== undefined && { body: c.body }),
       ...(c.status !== undefined && { status: c.status }), ...(c.tags !== undefined && { tags: c.tags }) };
     rules.set(c.id, next);
@@ -482,5 +482,5 @@ export function previewChanges(r: Rules, changes: RuleChange[]): PreviewItem[] {
 
 /** The log in words, for the history list. */
 export const LOG_LABEL: Record<RuleLogAction, string> = {
-  created: 'added', changed: 'changed', deleted: 'deleted', section_created: 'added the section', section_changed: 'renamed or moved the section', section_deleted: 'deleted the section',
+  created: 'ha aggiunto', changed: 'ha cambiato', deleted: 'ha cancellato', section_created: 'ha aggiunto la sezione', section_changed: 'ha rinominato o spostato la sezione', section_deleted: 'ha cancellato la sezione',
 };

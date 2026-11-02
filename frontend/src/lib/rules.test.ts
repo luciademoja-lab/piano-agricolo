@@ -101,9 +101,9 @@ describe('Update with Claude', () => {
   it('exports the whole rulebook with instructions and the request', () => {
     const out = exportForClaude(rules, 'Max says invites are now 30 per post.', '2026-10-27');
     expect(out).toMatch(/Max says invites are now 30 per post\./);
-    expect(out).toMatch(/vik-rules-changes\/1/);
+    expect(out).toMatch(/piano-agricolo-modifiche\/1/);
     const json = JSON.parse(out.split('```json')[1].split('```')[0]);
-    expect(json.format).toBe('vik-rules/1');
+    expect(json.format).toBe('piano-agricolo-regole/1');
     expect(json.sections.map((s: { id: string }) => s.id)).toEqual(['recruiting', 'payments']);
     expect(json.sections[0].rules[1]).toEqual({
       id: 'invites', title: 'Invitations per post', status: 'confirmed', tags: ['upwork'], source: 'Max, #managers-updates',
@@ -113,7 +113,7 @@ describe('Update with Claude', () => {
 
   it('reads the changes from Claude’s answer, text around the code block included', () => {
     const reply = 'Here you go:\n```json\n' + JSON.stringify({
-      format: 'vik-rules-changes/1', summary: 'Invites go to 30.', questions: ['Does this apply to zone A too?'],
+      format: 'piano-agricolo-modifiche/1', summary: 'Invites go to 30.', questions: ['Does this apply to zone A too?'],
       changes: [
         { op: 'upsert_rule', id: 'invites', body_md: 'Invite **30** freelancers.', status: 'confirmed', source: 'Max DM 27/10' },
         { op: 'upsert_section', id: 'onboarding', title: 'Onboarding' },
@@ -133,19 +133,19 @@ describe('Update with Claude', () => {
   });
 
   it('explains what is wrong with an answer it cannot use', () => {
-    expect(() => parseClaudeReply('Sure! I updated the rules.')).toThrow(/no JSON/);
-    expect(() => parseClaudeReply('```json\n{"changes": [\n```')).toThrow(/not valid JSON/);
-    expect(() => parseClaudeReply('{"format":"vik-rules-changes/1","changes":[{"op":"rename","id":"x"}]}')).toThrow(/change 1: unknown op "rename"/);
-    expect(() => parseClaudeReply('{"format":"vik-rules-changes/1","changes":[{"op":"delete_rule","id":"Bad Id"}]}')).toThrow(/change 1: .*id/);
-    expect(() => parseClaudeReply('{"format":"vik-rules-changes/1","changes":[{"op":"upsert_rule","id":"x","status":"maybe"}]}')).toThrow(/change 1: .*status/);
+    expect(() => parseClaudeReply('Sure! I updated the rules.')).toThrow(/non c’è JSON/);
+    expect(() => parseClaudeReply('```json\n{"changes": [\n```')).toThrow(/non è valido/);
+    expect(() => parseClaudeReply('{"format":"piano-agricolo-modifiche/1","changes":[{"op":"rename","id":"x"}]}')).toThrow(/modifica 1: operazione sconosciuta "rename"/);
+    expect(() => parseClaudeReply('{"format":"piano-agricolo-modifiche/1","changes":[{"op":"delete_rule","id":"Bad Id"}]}')).toThrow(/modifica 1: .*id/);
+    expect(() => parseClaudeReply('{"format":"piano-agricolo-modifiche/1","changes":[{"op":"upsert_rule","id":"x","status":"maybe"}]}')).toThrow(/modifica 1: .*stato/);
   });
 
   it('accepts an answer with questions only and no changes', () => {
-    expect(parseClaudeReply('{"format":"vik-rules-changes/1","changes":[],"questions":["Which countries?"]}')).toEqual({ changes: [], summary: '', questions: ['Which countries?'] });
+    expect(parseClaudeReply('{"format":"piano-agricolo-modifiche/1","changes":[],"questions":["Which countries?"]}')).toEqual({ changes: [], summary: '', questions: ['Which countries?'] });
   });
 
   it('previews what each change will do before it is applied', () => {
-    const { changes } = parseClaudeReply(JSON.stringify({ format: 'vik-rules-changes/1', changes: [
+    const { changes } = parseClaudeReply(JSON.stringify({ format: 'piano-agricolo-modifiche/1', changes: [
       { op: 'upsert_rule', id: 'invites', body_md: 'Invite **30** freelancers.', status: 'confirmed' },
       { op: 'upsert_rule', id: 'reuse', status: 'confirmed', title: 'Reuse posting (99 invites)' },
       { op: 'upsert_rule', id: 'new-one', section: 'payments', title: 'New rule', body_md: 'Text' },
@@ -154,10 +154,10 @@ describe('Update with Claude', () => {
       { op: 'upsert_rule', id: 'monday', status: 'confirmed' },
     ] }));
     expect(previewChanges(rules, changes)).toEqual([
-      { kind: 'changed', id: 'invites', title: 'Invitations per post', details: ['text changed'], problem: null },
-      { kind: 'changed', id: 'reuse', title: 'Reuse posting (99 invites)', details: ['title: “Reuse posting” → “Reuse posting (99 invites)”', 'status: To confirm → Confirmed'], problem: null },
-      { kind: 'added', id: 'new-one', title: 'New rule', details: ['in Payments', 'status: To confirm'], problem: null },
-      { kind: 'added', id: 'orphan', title: 'Lost', details: ['in nowhere', 'status: To confirm'], problem: 'There is no section “nowhere”.' },
+      { kind: 'changed', id: 'invites', title: 'Invitations per post', details: ['testo cambiato'], problem: null },
+      { kind: 'changed', id: 'reuse', title: 'Reuse posting (99 invites)', details: ['titolo: “Reuse posting” → “Reuse posting (99 invites)”', 'stato: Da confermare → Confermata'], problem: null },
+      { kind: 'added', id: 'new-one', title: 'New rule', details: ['in Payments', 'stato: Da confermare'], problem: null },
+      { kind: 'added', id: 'orphan', title: 'Lost', details: ['in nowhere', 'stato: Da confermare'], problem: 'Non esiste la sezione “nowhere”.' },
       { kind: 'deleted', id: 'old-monthly', title: 'Monthly milestones', details: [], problem: null },
       { kind: 'unchanged', id: 'monday', title: 'Payday is Monday', details: [], problem: null },
     ]);
