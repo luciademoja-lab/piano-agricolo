@@ -7,6 +7,7 @@ import {
   type Expense, type FarmTask, type Planting, type Settings,
 } from '../lib/plan';
 import { filePath, type RuleChange } from '../lib/rules';
+import { SEED_LIST, SEED_PARAMS, SEED_VARIETIES, toPublic, validateParam, validateVariety, type Param, type VarietyRow } from '../lib/pricing';
 import { normalizeUsername, validatePassword, validateUsername } from '../../../backend/supabase/functions/_shared/username.ts';
 import { RepoError, type NewLogin, type Profile, type Repo, type Role } from './repo';
 import { createMemoryRules } from './memoryRules';
@@ -40,6 +41,11 @@ export function createMemoryRepo(seed: Seed): Repo {
   const listeners = new Set<() => void>();
   const authListeners = new Set<() => void>();
   const rules = createMemoryRules(now, newId);
+  const varieties: VarietyRow[] = SEED_VARIETIES.map((v, i) => ({
+    variety: structuredClone(v), position: i + 1,
+    list: SEED_LIST[v.id] ? { ...SEED_LIST[v.id], updatedAt: now() } : { wholesale: null, retail: null, updatedAt: null },
+  }));
+  const params: Param[] = structuredClone(SEED_PARAMS);
 
   for (const u of seed.users) {
     const id = newId('u');
@@ -57,6 +63,7 @@ export function createMemoryRepo(seed: Seed): Repo {
     return p;
   };
   const admin = (msg = 'Hai accesso in sola lettura.') => { const p = current(); if (p.role !== 'admin') fail('forbidden', msg); return p; };
+  const staff = () => { const p = current(); if (p.role !== 'admin' && p.role !== 'viewer') fail('forbidden', 'Non hai accesso a questa parte.'); return p; };
   const plantingExists = (id: string | null) => { if (id !== null && !plantings.some((p) => p.id === id)) fail('not_found', 'Questa coltura non è più nel piano.'); };
 
   const repo: Repo = {
@@ -171,6 +178,40 @@ export function createMemoryRepo(seed: Seed): Repo {
       if (id === p.id && (role !== 'admin' || !active)) fail('invalid', 'Non puoi togliere a te stessa l’accesso da admin.');
       const t = profiles.get(id) ?? fail('not_found', 'Questa persona non esiste.');
       Object.assign(t, { fullName: fullName.trim(), role, active }); changed();
+    },
+
+    async loadPublicCatalog() {
+      return varieties.filter((r) => r.variety.public && r.variety.legal === 'ammesso')
+        .sort((a, b) => a.position - b.position || (a.variety.id < b.variety.id ? -1 : 1))
+        .map((r) => structuredClone(toPublic(r)));
+    },
+    async loadMushrooms() {
+      staff();
+      return structuredClone({ varieties: [...varieties].sort((a, b) => a.position - b.position), params: [...params].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) });
+    },
+    async saveVariety(v, position) {
+      admin();
+      const e = validateVariety(v); if (e.length) fail('invalid', e[0]);
+      const row = varieties.find((r) => r.variety.id === v.id);
+      if (row) { row.variety = structuredClone(v); row.position = position; }
+      else varieties.push({ variety: structuredClone(v), position, list: { wholesale: null, retail: null, updatedAt: null } });
+      changed();
+    },
+    async publishPrices(id, wholesale, retail) {
+      admin();
+      if ((wholesale !== null && !(wholesale > 0)) || (retail !== null && !(retail > 0))) fail('invalid', 'I prezzi del listino devono essere più di 0.');
+      const row = varieties.find((r) => r.variety.id === id) ?? fail('not_found', 'Questa varietà non esiste più.');
+      row.list = { wholesale, retail, updatedAt: wholesale === null && retail === null ? null : now() };
+      changed();
+    },
+    async setParam(key, value, source, url, date) {
+      admin();
+      const e = validateParam(key, value, source); if (e.length) fail('invalid', e[0]);
+      if (url && !/^https?:\/\//.test(url.trim())) fail('invalid', 'Il link della fonte deve iniziare con http:// o https://.');
+      if (date !== null && !isDate(date)) fail('invalid', 'Data non valida.');
+      const p = params.find((x) => x.key === key)!;
+      Object.assign(p, { value, source: source.trim(), url: url?.trim() || null, date });
+      changed();
     },
 
     async loadRules() { current(); return rules.load(); },

@@ -15,7 +15,9 @@ import { TasksPage } from './ui/TasksPage';
 import { SettingsPage } from './ui/SettingsPage';
 import { RulesPage } from './ui/RulesPage';
 import { TeamModal } from './ui/TeamModal';
-import { TABS, parseHash, routeHash, type Route } from './lib/route';
+import { FunghiPage } from './ui/FunghiPage';
+import { PublicCatalog } from './ui/PublicCatalog';
+import { TABS, parseHash, publicPage, routeHash, type Route } from './lib/route';
 
 export function App({ repo }: { repo: Repo }) {
   const [uid, setUid] = useState<string | null | undefined>(undefined);
@@ -25,8 +27,20 @@ export function App({ repo }: { repo: Repo }) {
     return repo.onAuthChange(check);
   }, [repo]);
 
+  // the public pages: the catalogue for everyone, the login on #/accedi
+  const [page, setPage] = useState(() => publicPage(location.hash));
+  useEffect(() => {
+    const on = () => setPage(publicPage(location.hash));
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  const open = (hash: string) => { history.pushState(null, '', hash); setPage(publicPage(hash)); window.scrollTo({ top: 0 }); };
+
   if (uid === undefined) return <div className="wrap"><p className="muted">Caricamento…</p></div>;
-  if (!uid) return <Login repo={repo} />;
+  if (page === 'catalogo' || (!uid && page !== 'accedi')) {
+    return <PublicCatalog repo={repo} signedIn={!!uid} onLogin={() => open('#/accedi')} onDashboard={() => open('#/panoramica')} />;
+  }
+  if (!uid) return <Login repo={repo} onBack={() => open('#/catalogo')} />;
   return <SignedIn key={uid} repo={repo} />;
 }
 
@@ -88,6 +102,7 @@ function SignedIn({ repo: base }: { repo: Repo }) {
         </div>
         <div className="userbar">
           <span className="muted">{me.fullName}{!isAdmin && ' · sola lettura'}</span>
+          <a className="btn" href="#/catalogo">Catalogo</a>
           {isAdmin && <button className="btn" type="button" onClick={() => setTeam(true)}>Persone</button>}
           <button className="btn" type="button" aria-label="Cambia tema" onClick={() => { const t = nextTheme(theme); applyTheme(t); setTheme(t); }}>{theme === 'dark' ? 'Chiaro' : 'Scuro'}</button>
           <button className="btn" type="button" onClick={() => repo.signOut()}>Esci</button>
@@ -112,6 +127,7 @@ function SignedIn({ repo: base }: { repo: Repo }) {
         {route.tab === 'spese' && <ExpensesPage {...props} />}
         {route.tab === 'calendario' && <CalendarPage {...props} filter={route.filter} />}
         {route.tab === 'task' && <TasksPage {...props} filter={route.filter} />}
+        {route.tab === 'funghi' && <FunghiPage repo={repo} isAdmin={isAdmin} refreshKey={tick} />}
         {route.tab === 'regolamenti' && <RulesPage repo={repo} me={me} profiles={people.profiles} refreshKey={tick} />}
         {route.tab === 'impostazioni' && <SettingsPage {...props} />}
       </main>

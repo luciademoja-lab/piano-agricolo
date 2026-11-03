@@ -7,6 +7,7 @@ import { generateExpenses, generateTasks, type Expense, type FarmTask, type Plan
 import { filePath, rulesFromRows, type ApplyResult, type EntryRow, type LogRow, type SectionRow } from '../lib/rules';
 import { loginEmail } from '../../../backend/supabase/functions/_shared/username.ts';
 import { parseDbError, RepoError, signInError, type Profile, type Repo } from './repo';
+import type { Param, PublicVariety, Variety, VarietyRow } from '../lib/pricing';
 
 type ProfileRow = { id: string; username: string; full_name: string; role: Profile['role']; active: boolean };
 type CatalogRow = { id: string; position: number; data: Crop };
@@ -15,10 +16,16 @@ type PlantingRow = { id: string; crop_id: string; m2: number | string; heads: nu
 type TaskRow = { id: string; planting_id: string | null; title: string; due: string; done: boolean; done_at: string | null; source: FarmTask['source'] };
 type ExpenseRow = { id: string; planting_id: string | null; title: string; date: string; amount_min: number | string; amount_max: number | string; kind: Expense['kind']; paid: boolean; actual_amount: number | string | null; source: Expense['source'] };
 
-export const REALTIME_TABLES = ['profiles', 'crop_catalog', 'farm_settings', 'plantings', 'farm_tasks', 'expenses', 'rules_sections', 'rules_entries', 'rules_log'];
+type VarietyDbRow = { id: string; position: number; public: boolean; data: Omit<Variety, 'id' | 'public'>; list_wholesale: number | string | null; list_retail: number | string | null; list_updated_at: string | null };
+type PublicDbRow = { id: string; position: number; data: Omit<PublicVariety, 'id' | 'list'>; list_wholesale: number | string | null; list_retail: number | string | null; list_updated_at: string | null };
+type ParamDbRow = { key: string; position: number; grp: string; label: string; unit: string; value: number | string; source: string; source_url: string | null; source_date: string | null };
+
+export const REALTIME_TABLES = ['profiles', 'crop_catalog', 'farm_settings', 'plantings', 'farm_tasks', 'expenses', 'rules_sections', 'rules_entries', 'rules_log', 'varieties', 'price_params'];
 const RULES_BUCKET = 'rules-files';
 const num = (v: number | string) => Number(v);
 const numOrNull = (v: number | string | null) => (v === null ? null : Number(v));
+const listOf = (r: { list_wholesale: number | string | null; list_retail: number | string | null; list_updated_at: string | null }) =>
+  ({ wholesale: numOrNull(r.list_wholesale), retail: numOrNull(r.list_retail), updatedAt: r.list_updated_at ? Date.parse(r.list_updated_at) : null });
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
   if (res.error) throw parseDbError(res.error.message);
@@ -127,6 +134,29 @@ export function createSupabaseRepo(url: string, anonKey: string): Repo {
     async updateProfile(id, fullName, role, active) {
       check(await sb.rpc('admin_update_profile', { p_id: id, p_full_name: fullName, p_role: role, p_active: active }));
     },
+
+    async loadPublicCatalog() {
+      const rows = check(await sb.rpc('catalog_public')) as PublicDbRow[];
+      return rows.map((r): PublicVariety => ({ ...r.data, id: r.id, list: listOf(r) }));
+    },
+    async loadMushrooms() {
+      const [v, p] = await Promise.all([
+        sb.from('varieties').select('id, position, public, data, list_wholesale, list_retail, list_updated_at').order('position'),
+        sb.from('price_params').select('key, position, grp, label, unit, value, source, source_url, source_date').order('position'),
+      ]);
+      const varieties = (check(v) as VarietyDbRow[]).map((r): VarietyRow => ({ variety: { ...r.data, id: r.id, public: r.public }, position: r.position, list: listOf(r) }));
+      const params = (check(p) as ParamDbRow[]).map((r): Param => ({
+        key: r.key, position: r.position, group: r.grp, label: r.label, unit: r.unit, value: Number(r.value), source: r.source, url: r.source_url, date: r.source_date,
+      }));
+      if (!varieties.length || !params.length) throw new RepoError('forbidden', 'Non hai accesso al listino dei funghi.');
+      return { varieties, params };
+    },
+    async saveVariety(v, position) {
+      const { id, public: pub, ...data } = v;
+      check(await sb.rpc('variety_save', { p_id: id, p_position: position, p_public: pub, p_data: data }));
+    },
+    async publishPrices(id, wholesale, retail) { check(await sb.rpc('variety_publish', { p_id: id, p_wholesale: wholesale, p_retail: retail })); },
+    async setParam(key, value, source, url, date) { check(await sb.rpc('param_set', { p_key: key, p_value: value, p_source: source, p_url: url, p_date: date })); },
 
     async loadRules() {
       const [s, e, l] = await Promise.all([

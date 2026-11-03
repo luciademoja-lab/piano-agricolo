@@ -3,7 +3,7 @@ import type { Repo } from '../data/repo';
 import { errorText } from './errors';
 import { Field } from './Modal';
 
-export function Login({ repo }: { repo: Repo }) {
+export function Login({ repo, onBack }: { repo: Repo; onBack?: () => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,7 @@ export function Login({ repo }: { repo: Repo }) {
         <div className="eyebrow">Cinquefrondi · Calabria</div>
         <h1>Piano agricolo</h1>
       </div>
+      {onBack && <button className="linkbtn" type="button" onClick={onBack}>← Torna al catalogo</button>}
       <form className="card" onSubmit={submit}>
         <Field label="Nome utente" htmlFor="login-user">
           <input id="login-user" type="text" autoComplete="username" autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value)} required />

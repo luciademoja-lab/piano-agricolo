@@ -4,11 +4,13 @@
 import type { DateStr } from '../lib/dates';
 import type { ExpenseKind, Farm, PlantingInput, Settings } from '../lib/plan';
 import type { ApplyResult, RuleChange, Rules } from '../lib/rules';
+import type { Param, PublicVariety, Variety, VarietyRow } from '../lib/pricing';
 
 export type Role = 'admin' | 'viewer';
 export type Profile = { id: string; username: string; fullName: string; role: Role; active: boolean };
 export type People = { me: Profile | null; profiles: Record<string, Profile> };
 export type NewLogin = { username: string; fullName: string; password: string; role: Role };
+export type Mushrooms = { varieties: VarietyRow[]; params: Param[] };
 export type NewManualExpense = { title: string; date: DateStr; amountMin: number; amountMax: number; kind: ExpenseKind; plantingId: string | null };
 
 export interface Repo {
@@ -41,6 +43,17 @@ export interface Repo {
   createLogin(l: NewLogin): Promise<{ id: string; username: string }>;
   resetPassword(userId: string, password: string): Promise<void>;
   updateProfile(id: string, fullName: string, role: Role, active: boolean): Promise<void>;
+
+  /** Catalogo funghi: anyone, without signing in. Only public varieties, only public fields, published list prices. */
+  loadPublicCatalog(): Promise<PublicVariety[]>;
+  /** staff (admin and read-only): every variety with costs, suppliers and sources, and the price parameters */
+  loadMushrooms(): Promise<Mushrooms>;
+  /** admin: creates or updates a variety (a species off the official list cannot be public) */
+  saveVariety(v: Variety, position: number): Promise<void>;
+  /** admin: the provisional list prices per kg the public sees; null = not decided yet */
+  publishPrices(id: string, wholesale: number | null, retail: number | null): Promise<void>;
+  /** admin: changes a price parameter; the source is required */
+  setParam(key: string, value: number, source: string, url: string | null, date: DateStr | null): Promise<void>;
 
   /** Regolamenti: everyone signed in reads them, viewers included */
   loadRules(): Promise<Rules>;

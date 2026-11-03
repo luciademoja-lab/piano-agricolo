@@ -14,3 +14,8 @@ export function eurShort(n: number): string {
   return eur(n);
 }
 export const hoursRange = (min: number, max: number) => (Math.abs(min - max) < 0.05 ? `${num(min)} h` : `${num(min)}–${num(max)} h`);
+/** prices per kg keep the cents: € 3,90/kg */
+export const eurKg = (n: number) => `€ ${new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' } as unknown as Intl.NumberFormatOptions).format(n)}/kg`;
+export const eurCents = (n: number) => `€ ${new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' } as unknown as Intl.NumberFormatOptions).format(n)}`;
+/** "13–21", or one number when both ends match */
+export const span = (min: number, max: number, digits = 0) => (Math.abs(min - max) < 1e-9 ? num(min, digits) : `${num(min, digits)}–${num(max, digits)}`);

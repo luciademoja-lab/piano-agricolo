@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseHash, routeHash } from './route';
+import { parseHash, publicPage, routeHash } from './route';
 
 describe('addresses', () => {
   it('opens tabs, one crop of the plan, and a calendar filtered on one crop', () => {
@@ -13,5 +13,12 @@ describe('addresses', () => {
   it('writes them back', () => {
     expect(routeHash({ tab: 'coltivazioni', planting: 'p1' })).toBe('#/coltura/p1');
     expect(routeHash({ tab: 'task', filter: 'p1' })).toBe('#/task?coltura=p1');
+  });
+  it('knows the public pages', () => {
+    expect(publicPage('#/catalogo')).toBe('catalogo');
+    expect(publicPage('#/accedi')).toBe('accedi');
+    expect(publicPage('')).toBeNull();
+    expect(publicPage('#/funghi')).toBeNull();
+    expect(parseHash('#/funghi')).toEqual({ tab: 'funghi' });
   });
 });

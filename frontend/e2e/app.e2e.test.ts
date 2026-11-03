@@ -39,12 +39,15 @@ beforeEach(async () => {
   const ctx = await browser.newContext({ timezoneId: 'Europe/Rome', viewport: { width: 1280, height: 900 } });
   // fonts come from Google: not needed for the tests, and the test machine may be offline
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  // photos come from Wikimedia Commons: the cards must stay readable when they do not load
+  await ctx.route(/wikimedia\.org/, (r) => r.abort());
   page = await ctx.newPage();
   page.on('pageerror', (e) => { throw e; });
   await page.goto(base);
 });
 
 async function signIn(username = 'lucia') {
+  await page.getByRole('button', { name: 'Accedi' }).click();
   await page.getByLabel('Nome utente').fill(username);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Entra' }).click();
@@ -58,6 +61,47 @@ async function openAdd(crop: string) {
   await page.getByLabel('Coltura', { exact: true }).selectOption(crop);
 }
 
+describe('the public catalogue', () => {
+  it('is the homepage, without signing in, as a provisional list and never a shop', async () => {
+    await page.getByRole('heading', { name: 'Funghi coltivati a Cinquefrondi', level: 1 }).waitFor();
+    await page.getByText('Listino provvisorio').waitFor();
+    await page.getByText('preordini e manifestazioni di interesse').waitFor();
+    const names = await page.locator('.shop-card h2').allInnerTexts();
+    expect(names).toEqual(['Pleurotus (orecchione, gelone)', 'Cardoncello', 'Pioppino', 'Shiitake', 'Gialletto']);
+    expect(await page.getByText(/acquista/i).count()).toBe(0);
+    expect(await page.getByText(/Criniera di leone/).count()).toBe(0);
+    await page.locator('.shop-card', { hasText: 'Cardoncello' }).getByText("17–25 giorni dall'ordine").waitFor();
+    expect(await page.getByText('Prezzo in definizione').count()).toBe(4);
+    const oyster = page.locator('.shop-card', { hasText: 'Pleurotus (orecchione, gelone)' });
+    await oyster.getByText('€ 3,90/kg').waitFor();
+    await oyster.getByText('€ 5,60/kg').waitFor();
+    // without the photo the card keeps its letter, and the source of each photo is linked
+    await page.locator('.shop-card', { hasText: 'Pioppino' }).locator('.shop-photo-none').waitFor();
+    expect(await page.locator('.shop-photo figcaption a').first().getAttribute('href')).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+  });
+  it('fits a phone screen without sideways scrolling', async () => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.locator('.shop-card').first().waitFor();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  });
+  it('shows the prices the admin publishes', async () => {
+    await signIn();
+    await tab('Funghi').click();
+    const row = page.locator('tr[data-variety="pioppino"]');
+    await row.getByText('Non conveniente').waitFor();
+    await row.getByRole('button', { name: 'Listino' }).click();
+    await page.getByLabel('Ristoranti (€/kg)').fill('18,50');
+    await page.getByLabel('Privati (€/kg)').fill('26');
+    await page.getByRole('button', { name: 'Pubblica' }).click();
+    await row.getByText('€ 18,50 / € 26,00').waitFor();
+    await page.getByRole('link', { name: 'Apri il catalogo pubblico' }).click();
+    const card = page.locator('.shop-card', { hasText: 'Pioppino' });
+    await card.getByText('€ 18,50/kg').waitFor();
+    await card.getByText('€ 26,00/kg').waitFor();
+    await card.getByText('prezzo provvisorio').waitFor();
+  });
+});
+
 describe('signing in', () => {
   it('starts with an empty plan', async () => {
     await signIn();
@@ -65,6 +109,7 @@ describe('signing in', () => {
     expect(await tab('Panoramica').getAttribute('aria-current')).toBe('page');
   });
   it('rejects a wrong password', async () => {
+    await page.getByRole('button', { name: 'Accedi' }).click();
     await page.getByLabel('Nome utente').fill('lucia');
     await page.getByLabel('Password').fill('sbagliata-123');
     await page.getByRole('button', { name: 'Entra' }).click();
@@ -153,6 +198,38 @@ describe('Regolamenti', () => {
     await card.waitFor();
     expect(await card.locator('.rule-status').innerText()).toMatch(/da confermare/i);
     expect(await card.locator('table').count()).toBe(1);
+  });
+});
+
+describe('Funghi (staff)', () => {
+  it('lists every variety with its cost, flags the unsellable ones and keeps a source on each parameter', async () => {
+    await signIn();
+    await tab('Funghi').click();
+    expect(await page.locator('.funghi-table tbody tr').count()).toBe(8);
+    await page.locator('tr[data-variety="hericium"]').getByText("Non nell'elenco vendibili").waitFor();
+    await page.locator('tr[data-variety="hericium"]').getByText(/Mancano: peso della balla/).waitFor();
+    await page.locator('li[data-param="energy_eur_kwh"]').getByText(/ARERA/).waitFor();
+    // a change to a parameter needs a source, and moves the prices
+    const before = await page.locator('tr[data-variety="cardoncello"] td.mono b').first().innerText();
+    const p = page.locator('li[data-param="margin_wholesale_pct"]');
+    await p.getByRole('button', { name: 'Modifica' }).click();
+    await p.getByLabel(/Margine all'ingrosso/).fill('10');
+    await p.getByLabel('Fonte', { exact: true }).fill('');
+    await p.getByRole('button', { name: 'Salva' }).click();
+    await p.getByText(/Indica la fonte/).waitFor();
+    await p.getByLabel('Fonte', { exact: true }).fill('Prova');
+    await p.getByRole('button', { name: 'Salva' }).click();
+    await p.getByText('Prova').waitFor();
+    expect(await page.locator('tr[data-variety="cardoncello"] td.mono b').first().innerText()).not.toBe(before);
+  });
+  it('refuses to put an unsellable species in the public catalogue', async () => {
+    await signIn();
+    await tab('Funghi').click();
+    await page.locator('tr[data-variety="hericium"]').getByRole('button', { name: 'Dettagli' }).click();
+    await page.getByText('Nome, cucina e vendita').click();
+    await page.getByLabel('Nel catalogo pubblico').check();
+    await page.getByRole('button', { name: 'Salva' }).click();
+    await page.getByRole('alert').getByText(/non può stare nel catalogo pubblico/).waitFor();
   });
 });
 

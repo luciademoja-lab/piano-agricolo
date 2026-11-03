@@ -31,6 +31,14 @@ La coltura entra nel piano e si apre la sua pagina: prospetto, spesa iniziale, p
 
 **Due ruoli.** *Admin* cambia tutto. *Sola lettura* vede tutto e non cambia niente (per un socio, il CAA, un consulente): crea il login da **Persone**.
 
+## Catalogo funghi (pubblico) e listino
+
+- **La homepage è il catalogo pubblico**: si vede senza login, da telefono e tablet. Dice sempre "listino provvisorio" e "preordini / manifestazioni di interesse": niente vendita finché non ci sono le autorizzazioni sanitarie. **Accedi** in alto porta alla dashboard.
+- **Funghi** (nella dashboard) mostra per ogni varietà il costo al kg, i prezzi minimi ai ristoranti e ai privati, il prezzo all'ingrosso di mercato e l'esito ("non conveniente" se il tuo minimo supera il prezzo all'ingrosso più alto trovato). Da qui pubblichi il listino che vedono i ristoratori.
+- Formula: costo al kg = (balla + quota di spedizione + energia e acqua del locale per la durata del ciclo) ÷ kg venduti + imballaggio. Kg venduti = peso della balla × resa attesa × (1 − scarto). Prezzo minimo = costo × (1 + margine). Il calcolo è in `frontend/src/lib/pricing.ts`, con i test.
+- Tutti i numeri (varietà e parametri) sono nel database con fonte e data, modificabili dall'admin. La prima versione è `backend/supabase/seed/funghi_v1.json`; dopo averlo cambiato, `npm run funghi:sql` rigenera la migrazione. Le modifiche fatte dalla dashboard non vengono sovrascritte.
+- Chi vede cosa lo decide il database: senza login si legge solo `catalog_public()` (nomi, cucina, foto, tempi, listino pubblicato); costi, fornitori e fonti solo admin e sola lettura. Una specie fuori dall'elenco di quelle vendibili (DPR 376/95) non può entrare nel catalogo pubblico.
+
 ## Da dove vengono i numeri
 
 Il catalogo delle colture è in `backend/supabase/seed/catalog_v1.json`.

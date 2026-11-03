@@ -70,3 +70,34 @@ describe('tasks, expenses and settings', () => {
     await expect(repo.applyRuleChanges([], 'editor')).rejects.toThrow('Solo l’admin può cambiare i regolamenti.');
   });
 });
+
+describe('the mushroom catalogue (same rules as backend/supabase/tests/funghi.test.ts)', () => {
+  it('shows the public catalogue without signing in, without costs', async () => {
+    await repo.signOut();
+    const pub = await repo.loadPublicCatalog();
+    expect(pub.map((v) => v.id)).toEqual(['pleurotus-ostreatus', 'cardoncello', 'pioppino', 'shiitake', 'pleurotus-cornucopiae']);
+    expect(pub[0]).not.toHaveProperty('supply');
+    await expect(repo.loadMushrooms()).rejects.toMatchObject({ code: 'not_signed_in' });
+  });
+  it('lets the read-only login read costs but not change them', async () => {
+    await repo.signOut();
+    await repo.signIn('socio', DEMO_PASSWORD);
+    expect((await repo.loadMushrooms()).varieties).toHaveLength(8);
+    await expect(repo.publishPrices('pioppino', 20, 30)).rejects.toMatchObject({ code: 'forbidden' });
+    await expect(repo.setParam('loss_pct', 5, 'misura mia', null, null)).rejects.toMatchObject({ code: 'forbidden' });
+  });
+  it('publishes the provisional list for the public', async () => {
+    await repo.publishPrices('pioppino', 21.2, 30.3);
+    const pub = await repo.loadPublicCatalog();
+    expect(pub.find((v) => v.id === 'pioppino')!.list).toEqual({ wholesale: 21.2, retail: 30.3, updatedAt: NOW });
+    await expect(repo.publishPrices('pioppino', 0, 30)).rejects.toMatchObject({ code: 'invalid' });
+  });
+  it('refuses a species off the official list in the public catalogue, and a parameter without source', async () => {
+    const { varieties } = await repo.loadMushrooms();
+    const h = varieties.find((r) => r.variety.id === 'hericium')!;
+    await expect(repo.saveVariety({ ...h.variety, public: true }, h.position)).rejects.toThrow(/catalogo pubblico/);
+    await expect(repo.setParam('loss_pct', 5, ' ', null, null)).rejects.toThrow(/fonte/);
+    await repo.setParam('temp_01', 9.5, 'misura in cantina', null, '2026-12-01');
+    expect((await repo.loadMushrooms()).params.find((p) => p.key === 'temp_01')).toMatchObject({ value: 9.5, source: 'misura in cantina', date: '2026-12-01' });
+  });
+});
