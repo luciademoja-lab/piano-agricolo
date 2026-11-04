@@ -41,3 +41,28 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeFileSync(FUNGHI_SQL, funghiSql(readFileSync(FUNGHI_JSON, 'utf8')));
   console.log('Scritto', FUNGHI_SQL);
 }
+
+// Valori nutrizionali: una migrazione a parte, che li aggiunge alle varietà che non li hanno ancora.
+export const NUTRITION_JSON = join(root, 'backend/supabase/seed/funghi_nutrition_v1.json');
+export const NUTRITION_SQL = join(root, 'backend/supabase/migrations/20261103180100_funghi_nutrition_seed.sql');
+
+export function nutritionSql(json) {
+  const { varieties } = JSON.parse(json);
+  const rows = Object.entries(varieties).map(([id, n]) => `  (${q(id)}, ${q(JSON.stringify(n))}::jsonb)`);
+  return [
+    '-- Valori nutrizionali delle varietà, generati da backend/supabase/seed/funghi_nutrition_v1.json',
+    '-- con `npm run funghi:sql`. Non modificarlo a mano: cambia il JSON e rigeneralo.',
+    '-- Si aggiungono solo dove mancano: le modifiche fatte dall\'admin restano.',
+    'update public.varieties v set data = v.data || jsonb_build_object(\'nutrition\', n.nutrition)',
+    'from (values',
+    rows.join(',\n'),
+    ') as n(id, nutrition)',
+    'where v.id = n.id and not (v.data ? \'nutrition\');',
+    '',
+  ].join('\n');
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  writeFileSync(NUTRITION_SQL, nutritionSql(readFileSync(NUTRITION_JSON, 'utf8')));
+  console.log('Scritto', NUTRITION_SQL);
+}

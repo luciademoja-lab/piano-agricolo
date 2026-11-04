@@ -17,6 +17,7 @@ describe('addresses', () => {
   it('knows the public pages', () => {
     expect(publicPage('#/catalogo')).toBe('catalogo');
     expect(publicPage('#/accedi')).toBe('accedi');
+    expect(publicPage('#/chi-sono')).toBe('chi-sono');
     expect(publicPage('')).toBeNull();
     expect(publicPage('#/funghi')).toBeNull();
     expect(parseHash('#/funghi')).toEqual({ tab: 'funghi' });

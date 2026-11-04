@@ -63,10 +63,10 @@ async function openAdd(crop: string) {
 
 describe('the public catalogue', () => {
   it('is the homepage, without signing in, as a provisional list and never a shop', async () => {
-    await page.getByRole('heading', { name: 'Funghi coltivati a Cinquefrondi', level: 1 }).waitFor();
+    await page.getByRole('heading', { name: 'Funghi raccolti stamattina.', level: 1 }).waitFor();
     await page.getByText('Listino provvisorio').waitFor();
     await page.getByText('preordini e manifestazioni di interesse').waitFor();
-    const names = await page.locator('.shop-card h2').allInnerTexts();
+    const names = await page.locator('.shop-card h3').allInnerTexts();
     expect(names).toEqual(['Pleurotus (orecchione, gelone)', 'Cardoncello', 'Pioppino', 'Shiitake', 'Gialletto']);
     expect(await page.getByText(/acquista/i).count()).toBe(0);
     expect(await page.getByText(/Criniera di leone/).count()).toBe(0);
@@ -79,9 +79,34 @@ describe('the public catalogue', () => {
     await page.locator('.shop-card', { hasText: 'Pioppino' }).locator('.shop-photo-none').waitFor();
     expect(await page.locator('.shop-photo figcaption a').first().getAttribute('href')).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
   });
+  it('shows what each mushroom brings, only with the claims the law allows', async () => {
+    const oyster = page.locator('.shop-card', { hasText: 'Pleurotus (orecchione, gelone)' });
+    for (const t of ['Poche calorie', 'Fonte di proteine', 'Fonte di fibre']) await oyster.locator('.shop-tags').getByText(t, { exact: true }).waitFor();
+    await oyster.getByText('Valori e benefici').click();
+    await oyster.getByText('Il folato contribuisce alla normale funzione del sistema immunitario.').waitFor();
+    await oyster.getByText('33 kcal').waitFor();
+    await page.getByText(/Una dieta varia ed equilibrata/).first().waitFor();
+    // no data for the gialletto: no claims at all
+    expect(await page.locator('.shop-card', { hasText: 'Gialletto' }).locator('.shop-tags, .shop-more').count()).toBe(0);
+    expect(await page.locator('.shop').getByText(/difese immunitarie|antitumoral|colesterolo/i).count()).toBe(0);
+  });
+  it('has a Chi sono page with the degrees, the method and no claim of being authorised', async () => {
+    await page.getByRole('navigation', { name: 'Pagine' }).getByRole('link', { name: 'Chi sono' }).click();
+    await page.getByRole('heading', { name: 'Lucia De Mojà', level: 1 }).waitFor();
+    await page.getByText('Laurea magistrale in Biologia Molecolare').waitFor();
+    await page.getByText('Högskolan i Skövde, Svezia').waitFor();
+    await page.getByText(/Una laurea non è un'autorizzazione/).waitFor();
+    // the story appears only once it is written in Lucia's words
+    expect(await page.getByRole('heading', { name: 'La mia storia' }).count()).toBe(0);
+    await page.getByRole('navigation', { name: 'Pagine' }).getByRole('link', { name: 'Funghi' }).click();
+    await page.locator('.shop-card').first().waitFor();
+  });
   it('fits a phone screen without sideways scrolling', async () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.locator('.shop-card').first().waitFor();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    await page.goto(base + '#/chi-sono');
+    await page.getByText('Il metodo del laboratorio, in cantina').waitFor();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   });
   it('shows the prices the admin publishes', async () => {

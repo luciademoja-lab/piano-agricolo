@@ -21,7 +21,9 @@ describe('the public catalogue', () => {
   it('shows only the varieties on the official list, to anyone, without costs or sources', () => {
     const rows = db.rows<{ id: string; data: Record<string, unknown>; list_wholesale: number | null }>('anon', 'select * from catalog_public()');
     expect(rows.map((r) => r.id)).toEqual(['pleurotus-ostreatus', 'cardoncello', 'pioppino', 'shiitake', 'pleurotus-cornucopiae']);
-    expect(Object.keys(rows[0].data).sort()).toEqual(['commonName', 'firstHarvestDays', 'incubationDays', 'kitchen', 'otherNames', 'photo', 'scientificName', 'shipDays']);
+    expect(Object.keys(rows[0].data).sort()).toEqual(['commonName', 'firstHarvestDays', 'incubationDays', 'kitchen', 'nutrition', 'otherNames', 'photo', 'scientificName', 'shipDays']);
+    expect((rows[0].data.nutrition as { per100g: { kcal: number } }).per100g.kcal).toBe(33);
+    expect(rows.find((r) => r.id === 'pleurotus-cornucopiae')!.data.nutrition).toBeNull();
     expect(Number(rows[0].list_wholesale)).toBe(3.9);
     expect(rows[1].list_wholesale).toBeNull();
   });

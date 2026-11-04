@@ -17,6 +17,7 @@ import { RulesPage } from './ui/RulesPage';
 import { TeamModal } from './ui/TeamModal';
 import { FunghiPage } from './ui/FunghiPage';
 import { PublicCatalog } from './ui/PublicCatalog';
+import { ChiSono } from './ui/ChiSono';
 import { TABS, parseHash, publicPage, routeHash, type Route } from './lib/route';
 
 export function App({ repo }: { repo: Repo }) {
@@ -37,8 +38,9 @@ export function App({ repo }: { repo: Repo }) {
   const open = (hash: string) => { history.pushState(null, '', hash); setPage(publicPage(hash)); window.scrollTo({ top: 0 }); };
 
   if (uid === undefined) return <div className="wrap"><p className="muted">Caricamento…</p></div>;
+  if (page === 'chi-sono') return <ChiSono nav={{ page, signedIn: !!uid, open }} />;
   if (page === 'catalogo' || (!uid && page !== 'accedi')) {
-    return <PublicCatalog repo={repo} signedIn={!!uid} onLogin={() => open('#/accedi')} onDashboard={() => open('#/panoramica')} />;
+    return <PublicCatalog repo={repo} nav={{ page: 'catalogo', signedIn: !!uid, open }} />;
   }
   if (!uid) return <Login repo={repo} onBack={() => open('#/catalogo')} />;
   return <SignedIn key={uid} repo={repo} />;

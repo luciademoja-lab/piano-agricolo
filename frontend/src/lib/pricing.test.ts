@@ -150,7 +150,7 @@ describe('checks', () => {
   });
   it('keeps costs, suppliers and sources out of the public view', () => {
     const pub = toPublic({ variety: V('cardoncello'), position: 1, list: { wholesale: 9, retail: 14, updatedAt: 1 } });
-    expect(Object.keys(pub).sort()).toEqual(['commonName', 'firstHarvestDays', 'id', 'incubationDays', 'kitchen', 'list', 'otherNames', 'photo', 'scientificName', 'shipDays']);
+    expect(Object.keys(pub).sort()).toEqual(['commonName', 'firstHarvestDays', 'id', 'incubationDays', 'kitchen', 'list', 'nutrition', 'otherNames', 'photo', 'scientificName', 'shipDays']);
   });
 });
 

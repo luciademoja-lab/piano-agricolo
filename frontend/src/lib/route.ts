@@ -15,11 +15,11 @@ export type TabId = (typeof TABS)[number]['id'];
 export type Route = { tab: TabId; planting?: string; filter?: string };
 
 /** The pages anyone sees without signing in. */
-export type PublicPage = 'catalogo' | 'accedi';
-/** #/catalogo is public for everyone; #/accedi is the login. Signed out, any other address shows the catalogue. */
+export type PublicPage = 'catalogo' | 'chi-sono' | 'accedi';
+/** #/catalogo and #/chi-sono are public for everyone; #/accedi is the login. Signed out, any other address shows the catalogue. */
 export function publicPage(hash: string): PublicPage | null {
   const first = decodeURIComponent(hash.replace(/^#/, '')).replace(/^\//, '').split(/[/?]/)[0];
-  return first === 'catalogo' ? 'catalogo' : first === 'accedi' ? 'accedi' : null;
+  return first === 'catalogo' ? 'catalogo' : first === 'chi-sono' ? 'chi-sono' : first === 'accedi' ? 'accedi' : null;
 }
 
 /** #/coltivazioni, #/coltura/<id>, #/calendario?coltura=<id>; a #rule-<id> link opens the Regolamenti. */

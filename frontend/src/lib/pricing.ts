@@ -8,7 +8,9 @@
 //
 // Un dato mancante resta null e il calcolo lo dice: non diventa mai zero.
 import seed from '../../../backend/supabase/seed/funghi_v1.json';
+import nutritionSeed from '../../../backend/supabase/seed/funghi_nutrition_v1.json';
 import type { DateStr } from './dates';
+import { validateNutrition, type Nutrition } from './nutrition';
 
 export type Range = { min: number; max: number };
 export type Source = { text: string; url?: string; date?: DateStr };
@@ -53,6 +55,8 @@ export type Variety = {
   market: { wholesale: Range | null; retail: Range | null };
   sources: Record<string, Source>;
   notes: string;
+  /** valori per 100 g e loro fonte; null o assente = non ancora trovati */
+  nutrition?: Nutrition | null;
 };
 
 export type Param = {
@@ -73,13 +77,14 @@ export type ListPrice = { wholesale: number | null; retail: number | null; updat
 export type VarietyRow = { variety: Variety; position: number; list: ListPrice };
 
 /** Quello che vede chi non è entrato: niente costi, fornitori, margini o fonti. */
-export type PublicVariety = Pick<Variety, 'id' | 'commonName' | 'scientificName' | 'otherNames' | 'kitchen' | 'photo' | 'shipDays' | 'incubationDays' | 'firstHarvestDays'> & { list: ListPrice };
+export type PublicVariety = Pick<Variety, 'id' | 'commonName' | 'scientificName' | 'otherNames' | 'kitchen' | 'photo' | 'shipDays' | 'incubationDays' | 'firstHarvestDays' | 'nutrition'> & { list: ListPrice };
 
 type SeedParam = Omit<Param, 'position'>;
 type SeedVariety = Variety & { list?: { wholesale: number | null; retail: number | null } };
 const SEED = seed as unknown as { params: SeedParam[]; varieties: SeedVariety[] };
 export const SEED_PARAMS: Param[] = SEED.params.map((p, i) => ({ url: null, date: null, ...p, position: i + 1 }));
-export const SEED_VARIETIES: Variety[] = SEED.varieties.map(({ list: _list, ...v }) => v);
+const NUTRITION = (nutritionSeed as unknown as { varieties: Record<string, Nutrition> }).varieties;
+export const SEED_VARIETIES: Variety[] = SEED.varieties.map(({ list: _list, ...v }) => ({ ...v, nutrition: NUTRITION[v.id] ?? null }));
 /** the list prices the first version starts with, by variety (the rest: not decided yet) */
 export const SEED_LIST: Record<string, { wholesale: number | null; retail: number | null }> =
   Object.fromEntries(SEED.varieties.filter((v) => v.list).map((v) => [v.id, v.list!]));
@@ -258,6 +263,7 @@ export function validateVariety(v: Variety): string[] {
   }
   if (v.supply.baleKg === 0) e.push('Peso della balla: deve essere più di 0.');
   if (!(v.supply.balesPerOrder >= 1)) e.push('Balle per ordine: almeno 1.');
+  e.push(...validateNutrition(v.nutrition));
   return e;
 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -276,6 +282,6 @@ export function toPublic(r: VarietyRow): PublicVariety {
   const v = r.variety;
   return {
     id: v.id, commonName: v.commonName, scientificName: v.scientificName, otherNames: v.otherNames, kitchen: v.kitchen, photo: v.photo,
-    shipDays: v.shipDays, incubationDays: v.incubationDays, firstHarvestDays: v.firstHarvestDays, list: { ...r.list },
+    shipDays: v.shipDays, incubationDays: v.incubationDays, firstHarvestDays: v.firstHarvestDays, nutrition: v.nutrition ?? null, list: { ...r.list },
   };
 }

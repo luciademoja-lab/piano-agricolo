@@ -1,49 +1,62 @@
-// La homepage pubblica: il catalogo preliminare da mostrare ai ristoratori, al tavolo, dal telefono o dal tablet.
-// Non si vende: listino provvisorio, preordini e manifestazioni di interesse. Niente costi né fornitori:
+// La homepage pubblica: il catalogo da mostrare ai ristoratori e alle famiglie, dal telefono o dal tablet.
+// Non si vende ancora: listino provvisorio, preordini e manifestazioni di interesse. Niente costi né fornitori:
 // arriva solo quello che restituisce catalog_public() nel database.
+// Le qualità di ogni fungo sono solo quelle che la legge permette di dire (lib/nutrition.ts).
 import { useEffect, useState } from 'react';
 import type { Repo } from '../data/repo';
-import { BRAND } from '../lib/brand';
-import { eurKg, span } from '../lib/format';
+import { eurKg, num, span } from '../lib/format';
+import { VARIED_DIET, claims } from '../lib/nutrition';
 import { daysToFirstHarvest, type PublicVariety } from '../lib/pricing';
 import { errorText } from './errors';
+import { ContactButton, ShopShell, type ShopNav } from './Shop';
 
-export function PublicCatalog({ repo, signedIn, onLogin, onDashboard }: { repo: Repo; signedIn: boolean; onLogin: () => void; onDashboard: () => void }) {
+const VENETO = 'https://www.greatitalianfoodtrade.it/funghi-e-tartufi/funghi-coltivati-italia-micoproteine/';
+
+export function PublicCatalog({ repo, nav }: { repo: Repo; nav: ShopNav }) {
   const [items, setItems] = useState<PublicVariety[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // the page has its own warm background, edge to edge
-  useEffect(() => { document.body.dataset.page = 'shop'; return () => { delete document.body.dataset.page; }; }, []);
   useEffect(() => {
     let alive = true;
     repo.loadPublicCatalog().then((v) => { if (alive) setItems(v); }, (e) => { if (alive) setError(errorText(e)); });
     return () => { alive = false; };
   }, [repo]);
+  const hero = items?.find((v) => v.photo)?.photo;
+  const toFunghi = () => document.getElementById('funghi')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <div className="shop">
-      <header className="shop-top">
-        <div className="shop-brand">
-          <span className="shop-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" width="30" height="30"><path d="M4 15c0-6 5.4-10 12-10s12 4 12 10c0 1.2-.9 2-2 2H6c-1.1 0-2-.8-2-2Z" fill="currentColor" /><path d="M12.5 17h7l1 9.2c.1.9-.6 1.8-1.6 1.8h-5.8c-1 0-1.7-.9-1.6-1.8l1-9.2Z" fill="currentColor" opacity=".55" /></svg>
-          </span>
-          <div>
-            <div className="shop-name">{BRAND.name}</div>
-            <div className="shop-place">{BRAND.place}</div>
+    <ShopShell nav={nav}>
+      <section className="shop-hero">
+        <div className="shop-hero-text">
+          <span className="shop-kicker">Coltivati a Cinquefrondi</span>
+          <h1>Funghi raccolti stamattina.</h1>
+          <p>Li coltivo io, a pochi chilometri dalla tua cucina, e te li porto il giorno stesso della raccolta. Per i ristoranti e le famiglie della Piana.</p>
+          <div className="shop-cta">
+            <button className="shop-btn big" type="button" onClick={toFunghi}>Scopri i funghi</button>
+            <a className="shop-link" href="#/chi-sono" onClick={(e) => { e.preventDefault(); nav.open('#/chi-sono'); }}>Chi sono →</a>
           </div>
         </div>
-        {signedIn
-          ? <button className="shop-btn" type="button" onClick={onDashboard}>Dashboard</button>
-          : <button className="shop-btn" type="button" onClick={onLogin}>Accedi</button>}
-      </header>
-
-      <section className="shop-hero">
-        <h1>{BRAND.title}</h1>
-        <p>{BRAND.tagline}</p>
-        <div className="shop-notice" role="note">
-          <span className="shop-tag">Listino provvisorio</span>
-          <span>Raccolgo <b>preordini e manifestazioni di interesse</b>: la vendita partirà solo dopo le autorizzazioni sanitarie. I prezzi sono indicativi e mi servono a capire cosa vi serve.</span>
-        </div>
+        {hero && <HeroPhoto url={hero.url} page={hero.page} />}
       </section>
+
+      <section className="shop-promises" aria-label="Perché sceglierli">
+        <article>
+          <h2>Dalla raccolta alla tavola in giornata</h2>
+          <p>Il fungo fresco dà il meglio nelle prime ore. Raccolgo la mattina della consegna: nessun magazzino, nessun viaggio in camion.</p>
+        </article>
+        <article>
+          <h2>Pochi chilometri, non mille</h2>
+          <p>Circa metà dei funghi coltivati in Italia viene dal Veneto, a oltre mille chilometri da qui. <a href={VENETO} target="_blank" rel="noreferrer">I dati</a>. I miei crescono a Cinquefrondi.</p>
+        </article>
+        <article>
+          <h2>Il rigore di un laboratorio</h2>
+          <p>Sono biologa molecolare: pulizia, controllo delle contaminazioni e tracciabilità sono il cuore della mia formazione. Li porto nella coltivazione.</p>
+        </article>
+      </section>
+
+      <div className="shop-notice" role="note">
+        <span className="shop-tag">Listino provvisorio</span>
+        <span>Raccolgo <b>preordini e manifestazioni di interesse</b>: la vendita partirà dopo la registrazione all'ASL. I prezzi sono indicativi e mi aiutano a capire cosa vi serve.</span>
+      </div>
 
       {repo.mode === 'demo' && <p className="shop-demo">Demo: i prezzi pubblicati qui restano solo in questa pagina.</p>}
       {error && <p className="shop-err" role="alert">{error}</p>}
@@ -51,23 +64,49 @@ export function PublicCatalog({ repo, signedIn, onLogin, onDashboard }: { repo: 
       {items && items.length === 0 && <p className="shop-muted">Il catalogo è in preparazione.</p>}
 
       {items && items.length > 0 && (
-        <ul className="shop-grid" aria-label="Varietà">
-          {items.map((v) => <Card key={v.id} v={v} />)}
-        </ul>
+        <section id="funghi" className="shop-section">
+          <h2 className="shop-h2">I funghi</h2>
+          <ul className="shop-grid" aria-label="Varietà">
+            {items.map((v) => <Card key={v.id} v={v} />)}
+          </ul>
+          <p className="shop-small">{VARIED_DIET} Le indicazioni nutrizionali seguono il Reg. (CE) 1924/2006 e il Reg. (UE) 432/2012 e sono calcolate sui valori per 100 g di fungo crudo.</p>
+        </section>
       )}
 
-      <footer className="shop-foot">
-        <p>I funghi coltivati freschi vanno consumati previa cottura.</p>
-        <p>Foto da Wikimedia Commons, con licenza libera: autore e licenza nella pagina di ogni foto.</p>
-      </footer>
-    </div>
+      <section className="shop-section shop-how">
+        <h2 className="shop-h2">Come funziona</h2>
+        <ol>
+          <li><b>Scegli i funghi</b> e quanti chili ti servono a settimana.</li>
+          <li><b>Dimmi i giorni</b> in cui vuoi la consegna: raccolgo due volte a settimana.</li>
+          <li><b>Raccolgo e consegno</b> lo stesso giorno, con etichetta, nome scientifico e data di raccolta.</li>
+        </ol>
+        <ContactButton />
+      </section>
+    </ShopShell>
   );
 }
+
+function HeroPhoto({ url, page }: { url: string; page: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
+  return (
+    <figure className="shop-hero-photo">
+      <img src={url} alt="Funghi Pleurotus appena raccolti" onError={() => setBroken(true)} />
+      <figcaption><a href={page} target="_blank" rel="noreferrer">Foto: Wikimedia Commons</a></figcaption>
+    </figure>
+  );
+}
+
+const SHOW_FIRST = ['Poche calorie', 'Fonte di proteine', 'Fonte di fibre'];
 
 function Card({ v }: { v: PublicVariety }) {
   const [broken, setBroken] = useState(false);
   const days = daysToFirstHarvest(v);
   const priced = v.list.wholesale !== null || v.list.retail !== null;
+  const n = v.nutrition;
+  const c = n ? claims(n.per100g) : null;
+  const tags = c ? SHOW_FIRST.filter((t) => c.nutrition.includes(t)) : [];
+  const vitamins = c ? c.nutrition.filter((t) => t.startsWith('Fonte di') && !SHOW_FIRST.includes(t)).map((t) => t.slice(9)) : [];
   return (
     <li className="shop-card">
       <figure className="shop-photo">
@@ -77,14 +116,27 @@ function Card({ v }: { v: PublicVariety }) {
         {v.photo && <figcaption><a href={v.photo.page} target="_blank" rel="noreferrer">Foto: {v.photo.credit}</a></figcaption>}
       </figure>
       <div className="shop-body">
-        <h2>{v.commonName}</h2>
+        <h3>{v.commonName}</h3>
         <p className="shop-sci"><i>{v.scientificName}</i>{v.otherNames && <span> · {v.otherNames}</span>}</p>
         <p className="shop-use">{v.kitchen}</p>
+        {tags.length > 0 && <ul className="shop-tags" aria-label="In tavola">{tags.map((t) => <li key={t}>{t}</li>)}</ul>}
+        {vitamins.length > 0 && <p className="shop-vit">Fonte di {listIt(vitamins)}.</p>}
+        {n && c && (c.health.length > 0 || n.per100g.kcal !== null) && (
+          <details className="shop-more">
+            <summary>Valori e benefici</summary>
+            <dl className="shop-values">
+              {n.per100g.kcal !== null && <div><dt>Energia</dt><dd>{num(n.per100g.kcal, 0)} kcal</dd></div>}
+              {n.per100g.protein !== null && <div><dt>Proteine</dt><dd>{num(n.per100g.protein)} g</dd></div>}
+              {n.per100g.fiber !== null && <div><dt>Fibre</dt><dd>{num(n.per100g.fiber)} g</dd></div>}
+              {n.per100g.fat !== null && <div><dt>Grassi</dt><dd>{num(n.per100g.fat)} g</dd></div>}
+              {Object.entries(c.nrvPct).map(([k, pct]) => <div key={k}><dt>{NUTRIENT[k] ?? k}</dt><dd>{pct}% VNR</dd></div>)}
+            </dl>
+            <ul className="shop-health">{c.health.map((h) => <li key={h}>{h}</li>)}</ul>
+            <p className="shop-small">Per 100 g di fungo crudo{n.approximate ? ', valori arrotondati' : ''}. VNR = valore nutritivo di riferimento giornaliero. Fonte: {n.source.url ? <a href={n.source.url} target="_blank" rel="noreferrer">{n.source.text}</a> : n.source.text}.</p>
+          </details>
+        )}
         <dl className="shop-facts">
-          <div>
-            <dt>Prima raccolta</dt>
-            <dd>{days ? `${span(days.min, days.max)} giorni dall'ordine` : 'tempi da definire'}</dd>
-          </div>
+          <div><dt>Prima raccolta</dt><dd>{days ? `${span(days.min, days.max)} giorni dall'ordine` : 'tempi da definire'}</dd></div>
         </dl>
         <div className={'shop-price' + (priced ? '' : ' none')}>
           {priced ? (<>
@@ -96,4 +148,14 @@ function Card({ v }: { v: PublicVariety }) {
       </div>
     </li>
   );
+}
+
+const NUTRIENT: Record<string, string> = {
+  potassium: 'Potassio', phosphorus: 'Fosforo', copper: 'Rame', selenium: 'Selenio', niacin: 'Vitamina B3',
+  riboflavin: 'Vitamina B2', pantothenic: 'Vitamina B5', folate: 'Folato', b6: 'Vitamina B6',
+};
+
+/** "a, b e c" */
+function listIt(items: string[]): string {
+  return items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`;
 }
