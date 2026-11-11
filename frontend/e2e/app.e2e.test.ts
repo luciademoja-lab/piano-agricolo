@@ -270,7 +270,7 @@ describe('the questionnaire', () => {
     await page.getByRole('button', { name: 'Avanti' }).click();
     // the mushroom of the card is already ticked; the ones still to ask the ASL about come apart
     expect(await page.getByRole('checkbox', { name: /Cardoncello/ }).isChecked()).toBe(true);
-    await page.getByText("Non sono ancora nell'elenco dei funghi che si possono vendere", { exact: false }).waitFor();
+    await page.getByRole('heading', { name: 'Funghi nuovi che vorrei portare qui' }).waitFor();
     await page.getByRole('checkbox', { name: /Criniera di leone/ }).check();
     await page.getByRole('checkbox', { name: /Pioppino/ }).check();
     expect(await page.getByRole('checkbox', { name: /Shiitake/ }).isDisabled()).toBe(true);
@@ -302,7 +302,7 @@ describe('the questionnaire', () => {
     await card.getByText('sì', { exact: true }).waitFor();
     const demandRow = page.locator('.req-demand tr', { hasText: 'Cardoncello' });
     expect(await demandRow.locator('td').allInnerTexts()).toEqual(['1', '1', '0', '2', '—']);
-    await page.locator('.req-demand tr', { hasText: 'Criniera di leone' }).getByText("da chiedere all'ASL").waitFor();
+    await page.locator('.req-demand tr', { hasText: 'Criniera di leone' }).getByText('conferma scritta ASL').waitFor();
     await card.getByLabel('Stato').selectOption('contattata');
     await card.getByLabel('La tua nota').fill('Richiamare lunedì');
     await card.getByRole('button', { name: 'Salva' }).click();

@@ -182,8 +182,8 @@ export function InterestForm({ repo, nav }: { repo: Repo; nav: ShopNav }) {
                 {sellable.map((o) => <Choice key={o.id} o={o} on={picked(o.id)} disabled={full && !picked(o.id)} onToggle={() => toggle(o.id)} />)}
               </div>
               {future.length > 0 && (<>
-                <h3 className="iq-sub">Quelli che vorrei portare qui</h3>
-                <p className="iq-hint">Non sono ancora nell'elenco dei funghi che si possono vendere: prima chiederò all'ASL. Se li chiedete in tanti, è un motivo in più per farlo.</p>
+                <h3 className="iq-sub">Funghi nuovi che vorrei portare qui</h3>
+                <p className="iq-hint">Da noi sono ancora poco conosciuti. Se li chiedete in tanti, è un motivo in più per coltivarli.</p>
                 <div className="iq-choices">
                   {future.map((o) => <Choice key={o.id} o={o} on={picked(o.id)} disabled={full && !picked(o.id)} onToggle={() => toggle(o.id)} />)}
                 </div>

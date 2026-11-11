@@ -79,7 +79,7 @@ export function InterestsPage({ repo, isAdmin, refreshKey }: { repo: Repo; isAdm
                   <tr key={d.key}>
                     <th scope="row">
                       {d.label}
-                      {d.varietyId === null ? <span className="pill">altro</span> : sellable.get(d.varietyId) === false ? <span className="pill off">da chiedere all'ASL</span> : null}
+                      {d.varietyId === null ? <span className="pill">altro</span> : sellable.get(d.varietyId) === false ? <span className="pill off">conferma scritta ASL</span> : null}
                     </th>
                     <td className="mono">{d.people}</td>
                     <td className="mono col-split">{d.ristoranti}</td>
