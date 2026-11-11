@@ -7,6 +7,7 @@ import type { Repo } from '../data/repo';
 import { eurKg, num, span } from '../lib/format';
 import { BRAND } from '../lib/brand';
 import { VARIED_DIET, claims } from '../lib/nutrition';
+import { storyOf } from '../lib/stories';
 import { daysToFirstHarvest, type PublicVariety } from '../lib/pricing';
 import { errorText } from './errors';
 import { ContactButton, ShopShell, type ShopNav } from './Shop';
@@ -28,9 +29,9 @@ export function PublicCatalog({ repo, nav }: { repo: Repo; nav: ShopNav }) {
     <ShopShell nav={nav}>
       <section className="shop-hero">
         <div className="shop-hero-text">
-          <span className="shop-kicker">Coltivati a Cinquefrondi</span>
-          <h1>Funghi raccolti stamattina.</h1>
-          <p>Li coltivo io, a pochi chilometri dalla tua cucina, e te li porto il giorno stesso della raccolta. Per i ristoranti e le famiglie della Piana.</p>
+          <span className="shop-kicker">Funghi freschi di Cinquefrondi</span>
+          <h1>Raccolti stamattina. Nel tuo piatto stasera.</h1>
+          <p>Li coltivo io, con il rigore di un laboratorio, e li consegno il giorno stesso della raccolta. Pochi chilometri invece di mille: per i ristoranti e le famiglie della Piana.</p>
           <div className="shop-cta">
             <button className="shop-btn big" type="button" onClick={() => nav.open('#/interesse')}>Preordina senza impegno</button>
             <button className="shop-link" type="button" onClick={toFunghi}>Scopri i funghi ↓</button>
@@ -85,7 +86,8 @@ export function PublicCatalog({ repo, nav }: { repo: Repo; nav: ShopNav }) {
 
       {items && items.length > 0 && (
         <section id="funghi" className="shop-section">
-          <h2 className="shop-h2">I funghi</h2>
+          <h2 className="shop-h2">I funghi che coltivo</h2>
+          <p className="shop-lead">Ognuno ha una storia, un carattere e un posto speciale in cucina. Scegli il tuo.</p>
           <ul className="shop-grid" aria-label="Varietà">
             {items.map((v) => <Card key={v.id} v={v} open={nav.open} />)}
           </ul>
@@ -130,9 +132,12 @@ function Card({ v, open }: { v: PublicVariety; open: (hash: string) => void }) {
   const c = n ? claims(n.per100g) : null;
   const tags = c ? SHOW_FIRST.filter((t) => c.nutrition.includes(t)) : [];
   const vitamins = c ? c.nutrition.filter((t) => t.startsWith('Fonte di') && !SHOW_FIRST.includes(t)).map((t) => t.slice(9)) : [];
+  const s = storyOf(v.id);
+  const want = `#/interesse?fungo=${encodeURIComponent(v.id)}`;
   return (
     <li className="shop-card">
       <figure className="shop-photo">
+        {s && <span className="shop-badge">{s.badge}</span>}
         {v.photo && !broken
           ? <img src={v.photo.url} alt={`${v.commonName} (${v.scientificName})`} loading="lazy" onError={() => setBroken(true)} />
           : <div className="shop-photo-none" aria-hidden="true">{v.commonName.charAt(0)}</div>}
@@ -141,7 +146,10 @@ function Card({ v, open }: { v: PublicVariety; open: (hash: string) => void }) {
       <div className="shop-body">
         <h3>{v.commonName}</h3>
         <p className="shop-sci"><i>{v.scientificName}</i>{v.otherNames && <span> · {v.otherNames}</span>}</p>
-        <p className="shop-use">{v.kitchen}</p>
+        {s && <p className="shop-hook">{s.hook}</p>}
+        {s && <p className="shop-story">{s.story}</p>}
+        <p className="shop-use"><b>In cucina.</b> {v.kitchen}</p>
+        {s && <p className="shop-why"><b>Perché sceglierlo.</b> {s.why}</p>}
         {tags.length > 0 && <ul className="shop-tags" aria-label="In tavola">{tags.map((t) => <li key={t}>{t}</li>)}</ul>}
         {vitamins.length > 0 && <p className="shop-vit">Fonte di {listIt(vitamins)}.</p>}
         {n && c && (c.health.length > 0 || n.per100g.kcal !== null) && (
@@ -168,7 +176,7 @@ function Card({ v, open }: { v: PublicVariety; open: (hash: string) => void }) {
             <small>prezzo provvisorio</small>
           </>) : <span>Prezzo in definizione</span>}
         </div>
-        <a className="shop-want" href={`#/interesse?fungo=${encodeURIComponent(v.id)}`} onClick={(e) => { e.preventDefault(); open(`#/interesse?fungo=${encodeURIComponent(v.id)}`); }}>Mi interessa →</a>
+        <a className="shop-btn shop-want-btn" href={want} aria-label={`Preordina ${v.commonName}`} onClick={(e) => { e.preventDefault(); open(want); }}>Lo voglio: preordina</a>
       </div>
     </li>
   );

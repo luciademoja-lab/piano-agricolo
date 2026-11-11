@@ -4,3 +4,4 @@ dist
 .env.*.local
 backend/supabase/.temp
 backend/supabase/.branches
+CLAUDE.md

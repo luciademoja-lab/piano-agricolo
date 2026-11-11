@@ -10,6 +10,7 @@ import {
   FREQUENCIES, MAX_ITEMS, parseKg, qty, validateInterest,
   type Frequency, type InterestInput, type InterestKind, type InterestOption, type Step,
 } from '../lib/interest';
+import { storyOf } from '../lib/stories';
 import { errorText } from './errors';
 import { ShopShell, type ShopNav } from './Shop';
 
@@ -176,14 +177,14 @@ export function InterestForm({ repo, nav }: { repo: Repo; nav: ShopNav }) {
 
           {step === 2 && (
             <fieldset className="iq-step">
-              <legend><h2 id="iq-q" ref={heading} tabIndex={-1}>Quali funghi ti interessano?</h2></legend>
-              <p className="iq-hint">Al massimo {MAX_ITEMS}: coltiverò quelli che chiedete di più.{full && <b> Ne hai scelti {MAX_ITEMS}.</b>}</p>
+              <legend><h2 id="iq-q" ref={heading} tabIndex={-1}>Quali funghi vorresti nel tuo piatto?</h2></legend>
+              <p className="iq-hint">Scegline fino a {MAX_ITEMS}. Non coltivo per un magazzino: coltivo per chi li mangerà. I più scelti saranno i primi a nascere nella mia cantina.{full && <b> Ne hai scelti {MAX_ITEMS}.</b>}</p>
               <div className="iq-choices">
                 {sellable.map((o) => <Choice key={o.id} o={o} on={picked(o.id)} disabled={full && !picked(o.id)} onToggle={() => toggle(o.id)} />)}
               </div>
               {future.length > 0 && (<>
-                <h3 className="iq-sub">Funghi nuovi che vorrei portare qui</h3>
-                <p className="iq-hint">Da noi sono ancora poco conosciuti. Se li chiedete in tanti, è un motivo in più per coltivarli.</p>
+                <h3 className="iq-sub">Le rarità che sogno di portare qui</h3>
+                <p className="iq-hint">Rosa come un fiore, d'oro come il sole, bianco come una criniera. Se li scegliete in tanti, saranno i prossimi a nascere.</p>
                 <div className="iq-choices">
                   {future.map((o) => <Choice key={o.id} o={o} on={picked(o.id)} disabled={full && !picked(o.id)} onToggle={() => toggle(o.id)} />)}
                 </div>
@@ -191,7 +192,7 @@ export function InterestForm({ repo, nav }: { repo: Repo; nav: ShopNav }) {
               <div className="iq-choices">
                 <label className={'iq-choice' + (otherPick ? ' on' : '')}>
                   <input type="checkbox" checked={!!otherPick} disabled={full && !otherPick} onChange={() => toggle(null)} />
-                  <span><b>Un altro fungo</b><i>scrivi tu quale</i></span>
+                  <span><b>Un altro fungo</b><em className="iq-hook">Hai un fungo del cuore? Scrivimi qual è.</em></span>
                 </label>
               </div>
               {otherPick && (
@@ -285,10 +286,16 @@ export function InterestForm({ repo, nav }: { repo: Repo; nav: ShopNav }) {
 }
 
 function Choice({ o, on, disabled, onToggle }: { o: InterestOption; on: boolean; disabled: boolean; onToggle: () => void }) {
+  const s = storyOf(o.id);
   return (
-    <label className={'iq-choice' + (on ? ' on' : '') + (disabled ? ' off' : '')}>
+    <label className={'iq-choice' + (on ? ' on' : '') + (disabled ? ' off' : '') + (s ? ' rich' : '')}>
       <input type="checkbox" checked={on} disabled={disabled} onChange={onToggle} />
-      <span><b>{o.commonName}</b><i>{o.scientificName}</i></span>
+      <span>
+        {s && <small className="iq-badge">{s.badge}</small>}
+        <b>{o.commonName}</b>
+        {s && <em className="iq-hook">{s.hook}</em>}
+        <i>{o.scientificName}</i>
+      </span>
     </label>
   );
 }

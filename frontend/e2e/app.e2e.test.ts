@@ -63,7 +63,7 @@ async function openAdd(crop: string) {
 
 describe('the public catalogue', () => {
   it('is the homepage, without signing in, as a provisional list and never a shop', async () => {
-    await page.getByRole('heading', { name: 'Funghi raccolti stamattina.', level: 1 }).waitFor();
+    await page.getByRole('heading', { name: 'Raccolti stamattina. Nel tuo piatto stasera.', level: 1 }).waitFor();
     await page.getByText('Listino provvisorio').waitFor();
     await page.getByText('preordini e manifestazioni di interesse').waitFor();
     const names = await page.locator('.shop-card h3').allInnerTexts();
@@ -260,7 +260,10 @@ describe('Funghi (staff)', () => {
 
 describe('the questionnaire', () => {
   it('goes from a mushroom card to the admin, with both consents', async () => {
-    await page.locator('.shop-card', { hasText: 'Cardoncello' }).getByRole('link', { name: 'Mi interessa →' }).click();
+    const cardoncello = page.locator('.shop-card', { hasText: 'Cardoncello' });
+    await cardoncello.getByText('Il re dei pleurotus', { exact: true }).waitFor();
+    await cardoncello.getByText('Perché sceglierlo.').waitFor();
+    await cardoncello.getByRole('link', { name: 'Preordina Cardoncello' }).click();
     await page.getByRole('heading', { name: 'Dimmi cosa ti serve', level: 1 }).waitFor();
     await page.getByText('Non è un acquisto: non paghi niente e non ti impegni.', { exact: false }).waitFor();
     // a step cannot be skipped
@@ -270,7 +273,8 @@ describe('the questionnaire', () => {
     await page.getByRole('button', { name: 'Avanti' }).click();
     // the mushroom of the card is already ticked; the ones still to ask the ASL about come apart
     expect(await page.getByRole('checkbox', { name: /Cardoncello/ }).isChecked()).toBe(true);
-    await page.getByRole('heading', { name: 'Funghi nuovi che vorrei portare qui' }).waitFor();
+    await page.getByRole('heading', { name: 'Le rarità che sogno di portare qui' }).waitFor();
+    await page.getByText('Il più sorprendente').waitFor();
     await page.getByRole('checkbox', { name: /Criniera di leone/ }).check();
     await page.getByRole('checkbox', { name: /Pioppino/ }).check();
     expect(await page.getByRole('checkbox', { name: /Shiitake/ }).isDisabled()).toBe(true);
@@ -324,7 +328,7 @@ describe('the questionnaire', () => {
     await page.getByRole('heading', { name: 'Chi sei?' }).waitFor();
     expect(await page.getByRole('radio', { name: /Ho un locale/ }).isChecked()).toBe(true);
     await page.getByRole('button', { name: 'Avanti' }).click();
-    await page.getByRole('heading', { name: 'Quali funghi ti interessano?' }).waitFor();
+    await page.getByRole('heading', { name: 'Quali funghi vorresti nel tuo piatto?' }).waitFor();
   });
   it('fits a phone screen', async () => {
     await page.setViewportSize({ width: 375, height: 800 });
