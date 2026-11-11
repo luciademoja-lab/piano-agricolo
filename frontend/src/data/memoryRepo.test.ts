@@ -146,3 +146,20 @@ describe('the questionnaire', () => {
     expect((await repo.loadInterests()).map((r) => r.email)).toEqual(['altra@example.it']);
   });
 });
+
+describe('the to-do list', () => {
+  it('belongs to the admin only, and dates the wait', async () => {
+    const mine = await repo.loadTodos();
+    expect(mine.map((t) => t.status).sort()).toEqual(['da_fare', 'fatto', 'in_attesa']);
+    const id = await repo.saveTodo(null, { title: ' Email al CAA ', status: 'da_fare', who: 'CIA', due: '', waitingSince: '', note: '', link: '' });
+    await repo.setTodoStatus(id, 'in_attesa');
+    expect((await repo.loadTodos()).find((t) => t.id === id)).toMatchObject({ title: 'Email al CAA', status: 'in_attesa', waitingSince: '2026-11-02' });
+    await repo.setTodoStatus(id, 'fatto');
+    expect((await repo.loadTodos()).find((t) => t.id === id)?.doneAt).toBe(NOW);
+    await expect(repo.saveTodo(null, { title: '', status: 'da_fare', who: '', due: '', waitingSince: '', note: '', link: '' })).rejects.toThrow("Scrivi cosa c'è da fare.");
+    await repo.signOut();
+    await repo.signIn('socio', DEMO_PASSWORD);
+    expect(await repo.loadTodos()).toEqual([]);
+    await expect(repo.deleteTodo(id)).rejects.toThrow('Hai accesso in sola lettura.');
+  });
+});

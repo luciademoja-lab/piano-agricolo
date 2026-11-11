@@ -340,6 +340,44 @@ describe('the questionnaire', () => {
   });
 });
 
+describe('Le mie cose da fare (admin)', () => {
+  it('adds one, waits for an answer, closes it, edits and deletes it', async () => {
+    await signIn();
+    await tab('Task').click();
+    const board = page.locator('section.todos');
+    await board.getByRole('heading', { name: 'Le mie cose da fare' }).waitFor();
+    const col = (name: string) => board.getByRole('region', { name });
+    // the demo starts with an example in each list
+    await col('In attesa di risposta').getByText('aspetti da 8 giorni').waitFor();
+    await col('In attesa di risposta').getByText('sollecita').waitFor();
+    // a title is needed
+    await board.getByRole('button', { name: 'Aggiungi', exact: true }).last().click();
+    await board.getByRole('alert').getByText("Scrivi cosa c'è da fare.").waitFor();
+    await board.getByLabel('Cosa devi fare').fill('Mandare la mail al SIAN');
+    await board.getByLabel('Con chi').fill('SIAN');
+    await board.getByRole('button', { name: 'Aggiungi', exact: true }).last().click();
+    await col('Da fare').getByText('Mandare la mail al SIAN').waitFor();
+    await board.getByRole('button', { name: 'Aspetto risposta: Mandare la mail al SIAN' }).click();
+    await col('In attesa di risposta').getByText('Mandare la mail al SIAN').waitFor();
+    await col('In attesa di risposta').getByText('aspetti da oggi').waitFor();
+    await board.getByRole('button', { name: 'Risposta arrivata: Mandare la mail al SIAN' }).click();
+    await col('Fatte').getByText('Mandare la mail al SIAN').waitFor();
+    await board.getByRole('button', { name: 'Modifica: Mandare la mail al SIAN' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel("Cosa c'è da fare").fill('Appuntamento SIAN fissato');
+    await dialog.getByLabel('Collegamento (per esempio la mail in Gmail)').fill('mail.google.com');
+    await dialog.getByRole('button', { name: 'Salva' }).click();
+    await dialog.getByText('Il link deve iniziare con http:// o https://.').waitFor();
+    await dialog.getByLabel('Collegamento (per esempio la mail in Gmail)').fill('https://mail.google.com/');
+    await dialog.getByRole('button', { name: 'Salva' }).click();
+    await col('Fatte').getByText('Appuntamento SIAN fissato').waitFor();
+    await board.getByRole('button', { name: 'Modifica: Appuntamento SIAN fissato' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancella' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Sì, cancella' }).click();
+    expect(await board.getByText('Appuntamento SIAN fissato').count()).toBe(0);
+  });
+});
+
 describe('read-only login', () => {
   it('sees the plan and cannot change it', async () => {
     await signIn('socio');
@@ -347,6 +385,12 @@ describe('read-only login', () => {
     await page.getByRole('heading', { name: 'Catalogo' }).waitFor();
     expect(await page.getByRole('button', { name: '+ Aggiungi', exact: true }).count()).toBe(0);
     expect(await page.getByRole('button', { name: 'Persone' }).count()).toBe(0);
+  });
+  it('does not see the to-do list', async () => {
+    await signIn('socio');
+    await tab('Task').click();
+    await page.getByRole('heading', { name: 'Task delle colture' }).waitFor();
+    expect(await page.locator('section.todos').count()).toBe(0);
   });
   it('does not see the requests, which hold personal data', async () => {
     await signIn('socio');

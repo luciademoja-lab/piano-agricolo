@@ -9,6 +9,7 @@ import { loginEmail } from '../../../backend/supabase/functions/_shared/username
 import { parseDbError, RepoError, signInError, type Profile, type Repo } from './repo';
 import type { Param, PublicVariety, Variety, VarietyRow } from '../lib/pricing';
 import type { Interest, InterestOption } from '../lib/interest';
+import type { Todo, TodoInput } from '../lib/todo';
 
 type ProfileRow = { id: string; username: string; full_name: string; role: Profile['role']; active: boolean };
 type CatalogRow = { id: string; position: number; data: Crop };
@@ -25,9 +26,14 @@ type InterestDbRow = {
   frequency: Interest['frequency']; note: string | null; updates_at: string | null; updates_stopped_at: string | null; status: Interest['status'];
   admin_note: string | null; interest_items: Array<{ position: number; variety_id: string | null; label: string; kg: number | string }>;
 };
+type TodoDbRow = {
+  id: string; title: string; status: Todo['status']; who: string | null; due: string | null; waiting_since: string | null;
+  note: string | null; link: string | null; done_at: string | null; created_at: string;
+};
+const todoJson = (i: TodoInput) => ({ title: i.title, status: i.status, who: i.who, due: i.due, waiting_since: i.waitingSince, note: i.note, link: i.link });
 type ParamDbRow = { key: string; position: number; grp: string; label: string; unit: string; value: number | string; source: string; source_url: string | null; source_date: string | null };
 
-export const REALTIME_TABLES = ['profiles', 'crop_catalog', 'farm_settings', 'plantings', 'farm_tasks', 'expenses', 'rules_sections', 'rules_entries', 'rules_log', 'varieties', 'price_params', 'interests', 'interest_items'];
+export const REALTIME_TABLES = ['profiles', 'crop_catalog', 'farm_settings', 'plantings', 'farm_tasks', 'expenses', 'rules_sections', 'rules_entries', 'rules_log', 'varieties', 'price_params', 'interests', 'interest_items', 'todos'];
 const RULES_BUCKET = 'rules-files';
 const num = (v: number | string) => Number(v);
 const time = (v: string | null) => (v ? Date.parse(v) : null);
@@ -187,6 +193,16 @@ export function createSupabaseRepo(url: string, anonKey: string): Repo {
         items: [...r.interest_items].sort((a, b) => a.position - b.position).map((it) => ({ varietyId: it.variety_id, label: it.label, kg: num(it.kg) })),
       }));
     },
+    async loadTodos() {
+      const rows = check(await sb.from('todos').select('id, title, status, who, due, waiting_since, note, link, done_at, created_at').limit(5000)) as TodoDbRow[];
+      return rows.map((r): Todo => ({
+        id: r.id, title: r.title, status: r.status, who: r.who, due: r.due, waitingSince: r.waiting_since, note: r.note, link: r.link,
+        doneAt: time(r.done_at), createdAt: Date.parse(r.created_at),
+      }));
+    },
+    async saveTodo(id, input) { return check(await sb.rpc('todo_save', { p_id: id, p: todoJson(input) })) as string; },
+    async setTodoStatus(id, status) { check(await sb.rpc('todo_set_status', { p_id: id, p_status: status })); },
+    async deleteTodo(id) { check(await sb.rpc('todo_delete', { p_id: id })); },
     async updateInterest(id, status, note) { check(await sb.rpc('interest_update', { p_id: id, p_status: status, p_note: note })); },
     async stopInterestUpdates(id) { check(await sb.rpc('interest_stop_updates', { p_id: id })); },
     async deleteInterest(id) { return check(await sb.rpc('interest_delete', { p_id: id })) as number; },

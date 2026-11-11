@@ -6,9 +6,10 @@ import { TaskChip, cropName, useToggleTask } from './CalendarPage';
 import { shortDate } from './PlantingDetail';
 import type { PageProps } from './shared';
 import { errorText } from './errors';
+import { TodoBoard } from './TodoBoard';
 
-export function TasksPage(props: PageProps & { filter?: string }) {
-  const { repo, farm, isAdmin, today, go, filter } = props;
+export function TasksPage(props: PageProps & { filter?: string; refreshKey: number }) {
+  const { repo, farm, isAdmin, today, go, filter, refreshKey } = props;
   const { toggle, error } = useToggleTask(repo);
   const [showAll, setShowAll] = useState(false);
   const tasks = filter ? farm.tasks.filter((t) => t.plantingId === filter) : farm.tasks;
@@ -22,8 +23,9 @@ export function TasksPage(props: PageProps & { filter?: string }) {
 
   return (
     <section className="page" aria-labelledby="tasks-h">
+      <TodoBoard repo={repo} isAdmin={isAdmin} today={today} refreshKey={refreshKey} />
       <div className="panel-head">
-        <div><div className="eyebrow">Piano d'azione</div><h2 id="tasks-h">Task</h2></div>
+        <div><div className="eyebrow">Piano d'azione</div><h2 id="tasks-h">Task delle colture</h2></div>
         <label className="inline">Coltura{' '}
           <select value={filter ?? ''} onChange={(e) => go({ tab: 'task', ...(e.target.value && { filter: e.target.value }) })}>
             <option value="">Tutte</option>

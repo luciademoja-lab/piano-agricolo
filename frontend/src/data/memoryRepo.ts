@@ -10,6 +10,7 @@ import { filePath, type RuleChange } from '../lib/rules';
 import { SEED_LIST, SEED_PARAMS, SEED_VARIETIES, toPublic, validateParam, validateVariety, type Param, type VarietyRow } from '../lib/pricing';
 import { normalizeUsername, validatePassword, validateUsername } from '../../../backend/supabase/functions/_shared/username.ts';
 import { STATUSES, validateInterest, type Interest, type InterestOption } from '../lib/interest';
+import { TODO_STATUSES, checkTodo, type Todo } from '../lib/todo';
 import { RepoError, type NewLogin, type Profile, type Repo, type Role } from './repo';
 import { createMemoryRules } from './memoryRules';
 
@@ -48,6 +49,12 @@ export function createMemoryRepo(seed: Seed): Repo {
   }));
   const params: Param[] = structuredClone(SEED_PARAMS);
   let interests: Interest[] = [];
+  // demo: a few generic examples, nothing personal
+  let todos: Todo[] = [
+    { id: 'todo-demo-1', title: 'Telefonare al CAA per un appuntamento', status: 'da_fare', who: 'CAA', due: todayInRome(now() + 6 * 86_400_000), waitingSince: null, note: null, link: null, doneAt: null, createdAt: now() },
+    { id: 'todo-demo-2', title: 'Preventivo per le balle di substrato', status: 'in_attesa', who: 'Fornitore di substrato', due: null, waitingSince: todayInRome(now() - 8 * 86_400_000), note: 'Email inviata, nessuna risposta.', link: null, doneAt: null, createdAt: now() },
+    { id: 'todo-demo-3', title: 'Questionario online sul sito', status: 'fatto', who: null, due: null, waitingSince: null, note: null, link: null, doneAt: now(), createdAt: now() },
+  ];
   const DAY = 86_400_000;
 
   for (const u of seed.users) {
@@ -225,6 +232,45 @@ export function createMemoryRepo(seed: Seed): Repo {
       changed();
     },
 
+    async loadTodos() {
+      current();
+      return isAdminNow() ? structuredClone(todos) : [];
+    },
+    async saveTodo(id, input) {
+      admin();
+      const bad = checkTodo(input);
+      if (bad) fail('invalid', bad);
+      const since = input.status === 'in_attesa' ? input.waitingSince || today() : input.waitingSince || null;
+      const fields = {
+        title: input.title.trim(), status: input.status, who: input.who.trim() || null, due: input.due || null, waitingSince: since,
+        note: input.note.trim() || null, link: input.link.trim() || null,
+      };
+      if (id === null) {
+        const nid = newId('todo');
+        todos.push({ ...fields, id: nid, doneAt: input.status === 'fatto' ? now() : null, createdAt: now() });
+        changed();
+        return nid;
+      }
+      const t = todos.find((x) => x.id === id) ?? fail('not_found', 'Questa cosa da fare non esiste più.');
+      Object.assign(t, fields, { doneAt: input.status === 'fatto' ? t.doneAt ?? now() : null });
+      changed();
+      return id;
+    },
+    async setTodoStatus(id, status) {
+      admin();
+      if (!TODO_STATUSES.some((s) => s.id === status)) fail('invalid', 'Stato non valido.');
+      const t = todos.find((x) => x.id === id) ?? fail('not_found', 'Questa cosa da fare non esiste più.');
+      t.status = status;
+      if (status === 'in_attesa') t.waitingSince = t.waitingSince ?? today();
+      t.doneAt = status === 'fatto' ? t.doneAt ?? now() : null;
+      changed();
+    },
+    async deleteTodo(id) {
+      admin();
+      if (!todos.some((x) => x.id === id)) fail('not_found', 'Questa cosa da fare non esiste più.');
+      todos = todos.filter((x) => x.id !== id);
+      changed();
+    },
     async loadInterestOptions() { return options(); },
     async submitInterest(i) {
       const opts = options();

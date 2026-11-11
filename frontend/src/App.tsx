@@ -133,7 +133,7 @@ function SignedIn({ repo: base }: { repo: Repo }) {
         {route.tab === 'prospetti' && <ProjectionsPage {...props} />}
         {route.tab === 'spese' && <ExpensesPage {...props} />}
         {route.tab === 'calendario' && <CalendarPage {...props} filter={route.filter} />}
-        {route.tab === 'task' && <TasksPage {...props} filter={route.filter} />}
+        {route.tab === 'task' && <TasksPage {...props} filter={route.filter} refreshKey={tick} />}
         {route.tab === 'funghi' && <FunghiPage repo={repo} isAdmin={isAdmin} refreshKey={tick} />}
         {route.tab === 'richieste' && <InterestsPage repo={repo} isAdmin={isAdmin} refreshKey={tick} />}
         {route.tab === 'regolamenti' && <RulesPage repo={repo} me={me} profiles={people.profiles} refreshKey={tick} />}

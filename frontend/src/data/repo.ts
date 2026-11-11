@@ -6,6 +6,7 @@ import type { ExpenseKind, Farm, PlantingInput, Settings } from '../lib/plan';
 import type { ApplyResult, RuleChange, Rules } from '../lib/rules';
 import type { Param, PublicVariety, Variety, VarietyRow } from '../lib/pricing';
 import type { Interest, InterestInput, InterestOption, InterestStatus } from '../lib/interest';
+import type { Todo, TodoInput, TodoStatus } from '../lib/todo';
 
 export type Role = 'admin' | 'viewer';
 export type Profile = { id: string; username: string; fullName: string; role: Role; active: boolean };
@@ -68,6 +69,14 @@ export interface Repo {
   stopInterestUpdates(id: string): Promise<void>;
   /** admin: deletes every request with this person's email; returns how many */
   deleteInterest(id: string): Promise<number>;
+
+  /** admin: the to-do list outside the crop cycles (the read-only login gets none) */
+  loadTodos(): Promise<Todo[]>;
+  /** admin: creates (id null) or changes a to-do; returns its id */
+  saveTodo(id: string | null, input: TodoInput): Promise<string>;
+  /** admin: to do -> waiting for an answer (from today) -> done, or back */
+  setTodoStatus(id: string, status: TodoStatus): Promise<void>;
+  deleteTodo(id: string): Promise<void>;
 
   /** Regolamenti: everyone signed in reads them, viewers included */
   loadRules(): Promise<Rules>;
