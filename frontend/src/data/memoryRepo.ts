@@ -9,6 +9,7 @@ import {
 import { filePath, type RuleChange } from '../lib/rules';
 import { SEED_LIST, SEED_PARAMS, SEED_VARIETIES, toPublic, validateParam, validateVariety, type Param, type VarietyRow } from '../lib/pricing';
 import { normalizeUsername, validatePassword, validateUsername } from '../../../backend/supabase/functions/_shared/username.ts';
+import { STATUSES, validateInterest, type Interest, type InterestOption } from '../lib/interest';
 import { RepoError, type NewLogin, type Profile, type Repo, type Role } from './repo';
 import { createMemoryRules } from './memoryRules';
 
@@ -46,6 +47,8 @@ export function createMemoryRepo(seed: Seed): Repo {
     list: SEED_LIST[v.id] ? { ...SEED_LIST[v.id], updatedAt: now() } : { wholesale: null, retail: null, updatedAt: null },
   }));
   const params: Param[] = structuredClone(SEED_PARAMS);
+  let interests: Interest[] = [];
+  const DAY = 86_400_000;
 
   for (const u of seed.users) {
     const id = newId('u');
@@ -64,6 +67,14 @@ export function createMemoryRepo(seed: Seed): Repo {
   };
   const admin = (msg = 'Hai accesso in sola lettura.') => { const p = current(); if (p.role !== 'admin') fail('forbidden', msg); return p; };
   const staff = () => { const p = current(); if (p.role !== 'admin' && p.role !== 'viewer') fail('forbidden', 'Non hai accesso a questa parte.'); return p; };
+  const options = (): InterestOption[] => [...varieties]
+    .filter((r) => (r.variety.public && r.variety.legal === 'ammesso') || r.variety.legal === 'non_in_elenco')
+    .map((r) => ({ r, sellable: r.variety.public && r.variety.legal === 'ammesso' }))
+    .sort((a, b) => Number(b.sellable) - Number(a.sellable) || a.r.position - b.r.position || (a.r.variety.id < b.r.variety.id ? -1 : 1))
+    .map(({ r, sellable }) => ({ id: r.variety.id, commonName: r.variety.commonName, scientificName: r.variety.scientificName, sellable }));
+  /** like the database policy: only an active admin sees the requests */
+  const isAdminNow = () => { const p = me ? profiles.get(me) : undefined; return !!p && p.active && p.role === 'admin'; };
+  const interestById = (id: string) => interests.find((r) => r.id === id) ?? fail('not_found', 'Questa richiesta non esiste più.');
   const plantingExists = (id: string | null) => { if (id !== null && !plantings.some((p) => p.id === id)) fail('not_found', 'Questa coltura non è più nel piano.'); };
 
   const repo: Repo = {
@@ -212,6 +223,55 @@ export function createMemoryRepo(seed: Seed): Repo {
       const p = params.find((x) => x.key === key)!;
       Object.assign(p, { value, source: source.trim(), url: url?.trim() || null, date });
       changed();
+    },
+
+    async loadInterestOptions() { return options(); },
+    async submitInterest(i) {
+      const opts = options();
+      const problems = validateInterest(i, opts);
+      if (problems.length) fail('invalid', problems[0].message);
+      const email = i.email.trim().toLowerCase();
+      if (interests.filter((r) => r.email === email && r.createdAt > now() - DAY).length >= 3) {
+        fail('invalid', 'Oggi hai già inviato tre richieste con questa email: se devi cambiare qualcosa, scrivimi.');
+      }
+      const id = newId('i');
+      const t = now();
+      interests.push({
+        id, createdAt: t, kind: i.kind, name: i.name.trim(), business: i.kind === 'ristorante' ? i.business.trim() || null : null,
+        town: i.town.trim(), email, phone: i.phone.trim() || null, frequency: i.frequency, note: i.note.trim() || null,
+        updatesAt: i.updates ? t : null, updatesStoppedAt: null, status: 'nuova', adminNote: null,
+        items: i.items.map((it) => ({
+          varietyId: it.variety, label: it.variety ? opts.find((o) => o.id === it.variety)!.commonName : (it.other || '').trim(), kg: Math.round(it.kg * 100) / 100,
+        })),
+      });
+      changed();
+      return id;
+    },
+    async loadInterests() {
+      current();
+      if (!isAdminNow()) return [];
+      return structuredClone([...interests].sort((a, b) => b.createdAt - a.createdAt));
+    },
+    async updateInterest(id, status, note) {
+      admin();
+      if (!STATUSES.some((s) => s.id === status)) fail('invalid', 'Stato non valido.');
+      if (note.length > 2000) fail('invalid', 'La nota è troppo lunga (al massimo 2000 caratteri).');
+      const r = interestById(id);
+      r.status = status; r.adminNote = note.trim() || null; changed();
+    },
+    async stopInterestUpdates(id) {
+      admin();
+      const email = interestById(id).email;
+      for (const r of interests) if (r.email === email && r.updatesStoppedAt === null) r.updatesStoppedAt = now();
+      changed();
+    },
+    async deleteInterest(id) {
+      admin();
+      const email = interestById(id).email;
+      const before = interests.length;
+      interests = interests.filter((r) => r.email !== email);
+      changed();
+      return before - interests.length;
     },
 
     async loadRules() { current(); return rules.load(); },

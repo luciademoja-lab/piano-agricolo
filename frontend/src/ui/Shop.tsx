@@ -3,7 +3,7 @@ import { useEffect, type ReactNode } from 'react';
 import { BRAND } from '../lib/brand';
 import '../shop.css';
 
-export type ShopNav = { page: 'catalogo' | 'chi-sono'; signedIn: boolean; open: (hash: string) => void };
+export type ShopNav = { page: 'catalogo' | 'chi-sono' | 'interesse'; signedIn: boolean; open: (hash: string) => void };
 
 export function ShopShell({ nav, children }: { nav: ShopNav; children: ReactNode }) {
   // le pagine pubbliche hanno il loro sfondo caldo, da bordo a bordo
@@ -24,6 +24,7 @@ export function ShopShell({ nav, children }: { nav: ShopNav; children: ReactNode
         <nav className="shop-nav" aria-label="Pagine">
           {link('#/catalogo', 'Funghi', nav.page === 'catalogo')}
           {link('#/chi-sono', 'Chi sono', nav.page === 'chi-sono')}
+          {link('#/interesse', 'Preordina', nav.page === 'interesse')}
           <button className="shop-btn" type="button" onClick={() => nav.open(nav.signedIn ? '#/panoramica' : '#/accedi')}>{nav.signedIn ? 'Dashboard' : 'Accedi'}</button>
         </nav>
       </header>
@@ -47,5 +48,6 @@ export function Mushroom({ size = 30 }: { size?: number }) {
 
 export function ContactButton({ className = 'shop-btn big' }: { className?: string }) {
   if (!BRAND.contact) return null;
-  return <a className={className} href={BRAND.contact.href} target="_blank" rel="noreferrer">{BRAND.contact.label}</a>;
+  const external = !BRAND.contact.href.startsWith('mailto:');
+  return <a className={className} href={BRAND.contact.href} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}>{BRAND.contact.label}</a>;
 }

@@ -101,3 +101,48 @@ describe('the mushroom catalogue (same rules as backend/supabase/tests/funghi.te
     expect((await repo.loadMushrooms()).params.find((p) => p.key === 'temp_01')).toMatchObject({ value: 9.5, source: 'misura in cantina', date: '2026-12-01' });
   });
 });
+
+describe('the questionnaire', () => {
+  const request = {
+    kind: 'privato' as const, name: 'Luca', business: '', town: 'Cittanova', email: 'Luca@Example.it', phone: '', frequency: 'quindicinale' as const,
+    note: '', privacy: true, updates: true, items: [{ variety: 'pioppino', other: null, kg: 0.5 }, { variety: null, other: 'Porcini', kg: 1 }],
+  };
+  it('lets anyone send a request, signed out, and only the admin read it', async () => {
+    await repo.signOut();
+    const options = await repo.loadInterestOptions();
+    expect(options.slice(0, 5).every((o) => o.sellable)).toBe(true);
+    expect(options.filter((o) => !o.sellable).map((o) => o.id)).toEqual(['pleurotus-djamor', 'pleurotus-citrinopileatus', 'hericium']);
+    const id = await repo.submitInterest(request);
+    await expect(repo.loadInterests()).rejects.toThrow('Entra di nuovo.');
+    await repo.signIn('socio', DEMO_PASSWORD);
+    expect(await repo.loadInterests()).toEqual([]);
+    await repo.signOut();
+    await repo.signIn('lucia', DEMO_PASSWORD);
+    expect(await repo.loadInterests()).toMatchObject([{
+      id, email: 'luca@example.it', business: null, updatesAt: NOW, status: 'nuova',
+      items: [{ varietyId: 'pioppino', label: 'Pioppino', kg: 0.5 }, { varietyId: null, label: 'Porcini', kg: 1 }],
+    }]);
+  });
+  it('checks the request and allows three a day per email', async () => {
+    await expect(repo.submitInterest({ ...request, privacy: false })).rejects.toThrow(/informativa sulla privacy/);
+    await expect(repo.submitInterest({ ...request, items: [] })).rejects.toThrow('Scegli almeno un fungo.');
+    for (let i = 0; i < 3; i++) await repo.submitInterest(request);
+    await expect(repo.submitInterest({ ...request, email: 'luca@example.it' })).rejects.toThrow(/tre richieste/);
+  });
+  it('lets the admin follow up, stop the updates of one person and delete their data', async () => {
+    const a = await repo.submitInterest(request);
+    const b = await repo.submitInterest({ ...request, frequency: 'settimanale' });
+    await repo.submitInterest({ ...request, email: 'altra@example.it' });
+    await repo.updateInterest(a, 'contattata', ' sentito ');
+    expect((await repo.loadInterests()).find((r) => r.id === a)).toMatchObject({ status: 'contattata', adminNote: 'sentito' });
+    await repo.stopInterestUpdates(b);
+    expect((await repo.loadInterests()).filter((r) => r.email === 'luca@example.it').every((r) => r.updatesStoppedAt === NOW)).toBe(true);
+    await repo.signOut();
+    await repo.signIn('socio', DEMO_PASSWORD);
+    await expect(repo.deleteInterest(a)).rejects.toThrow('Hai accesso in sola lettura.');
+    await repo.signOut();
+    await repo.signIn('lucia', DEMO_PASSWORD);
+    expect(await repo.deleteInterest(a)).toBe(2);
+    expect((await repo.loadInterests()).map((r) => r.email)).toEqual(['altra@example.it']);
+  });
+});

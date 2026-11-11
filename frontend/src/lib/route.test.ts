@@ -18,6 +18,8 @@ describe('addresses', () => {
     expect(publicPage('#/catalogo')).toBe('catalogo');
     expect(publicPage('#/accedi')).toBe('accedi');
     expect(publicPage('#/chi-sono')).toBe('chi-sono');
+    expect(publicPage('#/interesse?fungo=cardoncello')).toBe('interesse');
+    expect(parseHash('#/richieste')).toEqual({ tab: 'richieste' });
     expect(publicPage('')).toBeNull();
     expect(publicPage('#/funghi')).toBeNull();
     expect(parseHash('#/funghi')).toEqual({ tab: 'funghi' });

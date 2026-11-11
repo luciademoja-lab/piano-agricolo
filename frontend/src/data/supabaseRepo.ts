@@ -8,6 +8,7 @@ import { filePath, rulesFromRows, type ApplyResult, type EntryRow, type LogRow, 
 import { loginEmail } from '../../../backend/supabase/functions/_shared/username.ts';
 import { parseDbError, RepoError, signInError, type Profile, type Repo } from './repo';
 import type { Param, PublicVariety, Variety, VarietyRow } from '../lib/pricing';
+import type { Interest, InterestOption } from '../lib/interest';
 
 type ProfileRow = { id: string; username: string; full_name: string; role: Profile['role']; active: boolean };
 type CatalogRow = { id: string; position: number; data: Crop };
@@ -18,11 +19,18 @@ type ExpenseRow = { id: string; planting_id: string | null; title: string; date:
 
 type VarietyDbRow = { id: string; position: number; public: boolean; data: Omit<Variety, 'id' | 'public'>; list_wholesale: number | string | null; list_retail: number | string | null; list_updated_at: string | null };
 type PublicDbRow = { id: string; position: number; data: Omit<PublicVariety, 'id' | 'list'>; list_wholesale: number | string | null; list_retail: number | string | null; list_updated_at: string | null };
+type OptionDbRow = { id: string; position: number; common_name: string; scientific_name: string; sellable: boolean };
+type InterestDbRow = {
+  id: string; created_at: string; kind: Interest['kind']; name: string; business: string | null; town: string; email: string; phone: string | null;
+  frequency: Interest['frequency']; note: string | null; updates_at: string | null; updates_stopped_at: string | null; status: Interest['status'];
+  admin_note: string | null; interest_items: Array<{ position: number; variety_id: string | null; label: string; kg: number | string }>;
+};
 type ParamDbRow = { key: string; position: number; grp: string; label: string; unit: string; value: number | string; source: string; source_url: string | null; source_date: string | null };
 
-export const REALTIME_TABLES = ['profiles', 'crop_catalog', 'farm_settings', 'plantings', 'farm_tasks', 'expenses', 'rules_sections', 'rules_entries', 'rules_log', 'varieties', 'price_params'];
+export const REALTIME_TABLES = ['profiles', 'crop_catalog', 'farm_settings', 'plantings', 'farm_tasks', 'expenses', 'rules_sections', 'rules_entries', 'rules_log', 'varieties', 'price_params', 'interests', 'interest_items'];
 const RULES_BUCKET = 'rules-files';
 const num = (v: number | string) => Number(v);
+const time = (v: string | null) => (v ? Date.parse(v) : null);
 const numOrNull = (v: number | string | null) => (v === null ? null : Number(v));
 const listOf = (r: { list_wholesale: number | string | null; list_retail: number | string | null; list_updated_at: string | null }) =>
   ({ wholesale: numOrNull(r.list_wholesale), retail: numOrNull(r.list_retail), updatedAt: r.list_updated_at ? Date.parse(r.list_updated_at) : null });
@@ -157,6 +165,31 @@ export function createSupabaseRepo(url: string, anonKey: string): Repo {
     },
     async publishPrices(id, wholesale, retail) { check(await sb.rpc('variety_publish', { p_id: id, p_wholesale: wholesale, p_retail: retail })); },
     async setParam(key, value, source, url, date) { check(await sb.rpc('param_set', { p_key: key, p_value: value, p_source: source, p_url: url, p_date: date })); },
+
+    async loadInterestOptions() {
+      return (check(await sb.rpc('interest_options')) as OptionDbRow[]).map((r): InterestOption => ({ id: r.id, commonName: r.common_name, scientificName: r.scientific_name, sellable: r.sellable }));
+    },
+    async submitInterest(i) {
+      const p = {
+        kind: i.kind, name: i.name, business: i.kind === 'ristorante' ? i.business : '', town: i.town, email: i.email, phone: i.phone,
+        frequency: i.frequency, note: i.note, privacy: i.privacy, updates: i.updates,
+        items: i.items.map((it) => (it.variety ? { variety: it.variety, kg: it.kg } : { other: it.other, kg: it.kg })),
+      };
+      return check(await sb.rpc('interest_submit', { p })) as string;
+    },
+    async loadInterests() {
+      const rows = check(await sb.from('interests')
+        .select('id, created_at, kind, name, business, town, email, phone, frequency, note, updates_at, updates_stopped_at, status, admin_note, interest_items (position, variety_id, label, kg)')
+        .order('created_at', { ascending: false })) as InterestDbRow[];
+      return rows.map((r): Interest => ({
+        id: r.id, createdAt: Date.parse(r.created_at), kind: r.kind, name: r.name, business: r.business, town: r.town, email: r.email, phone: r.phone,
+        frequency: r.frequency, note: r.note, updatesAt: time(r.updates_at), updatesStoppedAt: time(r.updates_stopped_at), status: r.status, adminNote: r.admin_note,
+        items: [...r.interest_items].sort((a, b) => a.position - b.position).map((it) => ({ varietyId: it.variety_id, label: it.label, kg: num(it.kg) })),
+      }));
+    },
+    async updateInterest(id, status, note) { check(await sb.rpc('interest_update', { p_id: id, p_status: status, p_note: note })); },
+    async stopInterestUpdates(id) { check(await sb.rpc('interest_stop_updates', { p_id: id })); },
+    async deleteInterest(id) { return check(await sb.rpc('interest_delete', { p_id: id })) as number; },
 
     async loadRules() {
       const [s, e, l] = await Promise.all([

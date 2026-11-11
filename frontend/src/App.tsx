@@ -18,6 +18,8 @@ import { TeamModal } from './ui/TeamModal';
 import { FunghiPage } from './ui/FunghiPage';
 import { PublicCatalog } from './ui/PublicCatalog';
 import { ChiSono } from './ui/ChiSono';
+import { InterestForm } from './ui/InterestForm';
+import { InterestsPage } from './ui/InterestsPage';
 import { TABS, parseHash, publicPage, routeHash, type Route } from './lib/route';
 
 export function App({ repo }: { repo: Repo }) {
@@ -30,15 +32,18 @@ export function App({ repo }: { repo: Repo }) {
 
   // the public pages: the catalogue for everyone, the login on #/accedi
   const [page, setPage] = useState(() => publicPage(location.hash));
+  // every visit to the questionnaire starts it again, even from its own thank-you page
+  const [visit, setVisit] = useState(0);
   useEffect(() => {
-    const on = () => setPage(publicPage(location.hash));
+    const on = () => { setPage(publicPage(location.hash)); setVisit((v) => v + 1); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  const open = (hash: string) => { history.pushState(null, '', hash); setPage(publicPage(hash)); window.scrollTo({ top: 0 }); };
+  const open = (hash: string) => { history.pushState(null, '', hash); setPage(publicPage(hash)); setVisit((v) => v + 1); window.scrollTo({ top: 0 }); };
 
   if (uid === undefined) return <div className="wrap"><p className="muted">Caricamento…</p></div>;
   if (page === 'chi-sono') return <ChiSono nav={{ page, signedIn: !!uid, open }} />;
+  if (page === 'interesse') return <InterestForm key={visit} repo={repo} nav={{ page, signedIn: !!uid, open }} />;
   if (page === 'catalogo' || (!uid && page !== 'accedi')) {
     return <PublicCatalog repo={repo} nav={{ page: 'catalogo', signedIn: !!uid, open }} />;
   }
@@ -130,6 +135,7 @@ function SignedIn({ repo: base }: { repo: Repo }) {
         {route.tab === 'calendario' && <CalendarPage {...props} filter={route.filter} />}
         {route.tab === 'task' && <TasksPage {...props} filter={route.filter} />}
         {route.tab === 'funghi' && <FunghiPage repo={repo} isAdmin={isAdmin} refreshKey={tick} />}
+        {route.tab === 'richieste' && <InterestsPage repo={repo} isAdmin={isAdmin} refreshKey={tick} />}
         {route.tab === 'regolamenti' && <RulesPage repo={repo} me={me} profiles={people.profiles} refreshKey={tick} />}
         {route.tab === 'impostazioni' && <SettingsPage {...props} />}
       </main>

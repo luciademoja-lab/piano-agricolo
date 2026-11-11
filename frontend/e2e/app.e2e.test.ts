@@ -258,6 +258,84 @@ describe('Funghi (staff)', () => {
   });
 });
 
+describe('the questionnaire', () => {
+  it('goes from a mushroom card to the admin, with both consents', async () => {
+    await page.locator('.shop-card', { hasText: 'Cardoncello' }).getByRole('link', { name: 'Mi interessa →' }).click();
+    await page.getByRole('heading', { name: 'Dimmi cosa ti serve', level: 1 }).waitFor();
+    await page.getByText('Non è un acquisto: non paghi niente e non ti impegni.', { exact: false }).waitFor();
+    // a step cannot be skipped
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await page.getByRole('alert').getByText('Dimmi se hai un locale o sei un privato.').waitFor();
+    await page.getByRole('radio', { name: /Ho un locale/ }).check();
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    // the mushroom of the card is already ticked; the ones still to ask the ASL about come apart
+    expect(await page.getByRole('checkbox', { name: /Cardoncello/ }).isChecked()).toBe(true);
+    await page.getByText("Non sono ancora nell'elenco dei funghi che si possono vendere", { exact: false }).waitFor();
+    await page.getByRole('checkbox', { name: /Criniera di leone/ }).check();
+    await page.getByRole('checkbox', { name: /Pioppino/ }).check();
+    expect(await page.getByRole('checkbox', { name: /Shiitake/ }).isDisabled()).toBe(true);
+    await page.getByRole('checkbox', { name: /Pioppino/ }).uncheck();
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await page.getByRole('heading', { name: 'Quanti e ogni quanto?' }).waitFor();
+    await page.locator('.iq-qty', { hasText: 'Cardoncello' }).getByRole('button', { name: '2 kg' }).click();
+    await page.getByLabel('Criniera di leone: kg a ogni consegna').fill('0,5');
+    await page.getByRole('radio', { name: 'Ogni settimana' }).check();
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await page.getByLabel('Nome e cognome').fill('Maria Rossi');
+    await page.getByLabel('Nome del locale').fill('Trattoria da Maria');
+    await page.getByLabel('Comune di consegna').fill('Polistena');
+    await page.getByLabel('Email', { exact: true }).fill('maria@example.it');
+    await page.getByRole('button', { name: 'Invia la richiesta' }).click();
+    await page.getByRole('alert').getByText(/devi aver letto l’informativa/).waitFor();
+    await page.getByText("Leggi l'informativa sulla privacy").click();
+    await page.getByText(/Garante per la protezione dei dati personali/).waitFor();
+    await page.getByRole('checkbox', { name: /Ho letto l'informativa/ }).check();
+    await page.getByRole('checkbox', { name: /Voglio ricevere aggiornamenti/ }).check();
+    await page.getByRole('button', { name: 'Invia la richiesta' }).click();
+    await page.getByRole('heading', { name: 'Grazie, Maria!' }).waitFor();
+    await page.getByText(/Ti avviserò quando parte la coltivazione/).waitFor();
+
+    await signIn();
+    await tab('Richieste').click();
+    const card = page.locator('.req-card', { hasText: 'Trattoria da Maria · Maria Rossi' });
+    await card.getByText('maria@example.it').waitFor();
+    await card.getByText('sì', { exact: true }).waitFor();
+    const demandRow = page.locator('.req-demand tr', { hasText: 'Cardoncello' });
+    expect(await demandRow.locator('td').allInnerTexts()).toEqual(['1', '1', '0', '2', '—']);
+    await page.locator('.req-demand tr', { hasText: 'Criniera di leone' }).getByText("da chiedere all'ASL").waitFor();
+    await card.getByLabel('Stato').selectOption('contattata');
+    await card.getByLabel('La tua nota').fill('Richiamare lunedì');
+    await card.getByRole('button', { name: 'Salva' }).click();
+    await card.getByRole('button', { name: 'Salva' }).waitFor({ state: 'detached' });
+    await card.getByRole('button', { name: 'Stop aggiornamenti' }).click();
+    await card.getByText('ha smesso').waitFor();
+    await card.getByRole('button', { name: 'Cancella i suoi dati' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancella' }).click();
+    await page.getByText('Nessuna richiesta per ora.', { exact: false }).waitFor();
+  });
+  it('shows the two offers on the homepage, as preorders, and starts the questionnaire from them', async () => {
+    const offers = page.locator('.shop-offers');
+    await offers.getByRole('heading', { name: "L'abbonamento fresco di giornata" }).waitFor();
+    await offers.getByRole('heading', { name: 'La cassetta di funghi freschi' }).waitFor();
+    expect(await offers.getByText('Garanzia.').count()).toBe(2);
+    await offers.getByText('Sono preordini: non paghi niente e non ti impegni.', { exact: false }).waitFor();
+    expect(await offers.getByText(/acquista|compra/i).count()).toBe(0);
+    await offers.getByRole('button', { name: 'Prenota il tuo posto' }).click();
+    await page.getByRole('heading', { name: 'Chi sei?' }).waitFor();
+    expect(await page.getByRole('radio', { name: /Ho un locale/ }).isChecked()).toBe(true);
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await page.getByRole('heading', { name: 'Quali funghi ti interessano?' }).waitFor();
+  });
+  it('fits a phone screen', async () => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto(base + '#/interesse');
+    await page.getByRole('radio', { name: /Sono un privato/ }).check();
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await page.getByRole('checkbox', { name: /Pioppino/ }).check();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  });
+});
+
 describe('read-only login', () => {
   it('sees the plan and cannot change it', async () => {
     await signIn('socio');
@@ -265,5 +343,11 @@ describe('read-only login', () => {
     await page.getByRole('heading', { name: 'Catalogo' }).waitFor();
     expect(await page.getByRole('button', { name: '+ Aggiungi', exact: true }).count()).toBe(0);
     expect(await page.getByRole('button', { name: 'Persone' }).count()).toBe(0);
+  });
+  it('does not see the requests, which hold personal data', async () => {
+    await signIn('socio');
+    await tab('Richieste').click();
+    await page.getByText(/le vede solo l'admin/).waitFor();
+    expect(await page.locator('.req-card').count()).toBe(0);
   });
 });

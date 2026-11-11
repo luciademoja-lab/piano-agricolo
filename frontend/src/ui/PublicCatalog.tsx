@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import type { Repo } from '../data/repo';
 import { eurKg, num, span } from '../lib/format';
+import { BRAND } from '../lib/brand';
 import { VARIED_DIET, claims } from '../lib/nutrition';
 import { daysToFirstHarvest, type PublicVariety } from '../lib/pricing';
 import { errorText } from './errors';
@@ -31,8 +32,8 @@ export function PublicCatalog({ repo, nav }: { repo: Repo; nav: ShopNav }) {
           <h1>Funghi raccolti stamattina.</h1>
           <p>Li coltivo io, a pochi chilometri dalla tua cucina, e te li porto il giorno stesso della raccolta. Per i ristoranti e le famiglie della Piana.</p>
           <div className="shop-cta">
-            <button className="shop-btn big" type="button" onClick={toFunghi}>Scopri i funghi</button>
-            <a className="shop-link" href="#/chi-sono" onClick={(e) => { e.preventDefault(); nav.open('#/chi-sono'); }}>Chi sono →</a>
+            <button className="shop-btn big" type="button" onClick={() => nav.open('#/interesse')}>Preordina senza impegno</button>
+            <button className="shop-link" type="button" onClick={toFunghi}>Scopri i funghi ↓</button>
           </div>
         </div>
         {hero && <HeroPhoto url={hero.url} page={hero.page} />}
@@ -53,6 +54,25 @@ export function PublicCatalog({ repo, nav }: { repo: Repo; nav: ShopNav }) {
         </article>
       </section>
 
+      <section className="shop-section shop-offers" aria-labelledby="offerte">
+        <span className="shop-kicker">Quando partirà la vendita</span>
+        <h2 id="offerte" className="shop-h2">Due modi per avere i miei funghi</h2>
+        <div className="shop-offer-grid">
+          {BRAND.offers.map((o) => (
+            <article key={o.kind} className="shop-offer">
+              <span className="shop-offer-who">{o.who}</span>
+              <h3>{o.name}</h3>
+              <p className="shop-offer-promise">{o.promise}</p>
+              <ul className="shop-offer-points">{o.points.map((p) => <li key={p}>{p}</li>)}</ul>
+              <p className="shop-offer-guarantee"><b>Garanzia.</b> {o.guarantee}</p>
+              {o.limit && <p className="shop-offer-limit">{o.limit}</p>}
+              <button className="shop-btn big" type="button" onClick={() => nav.open(`#/interesse?chi=${o.kind}`)}>{o.cta}</button>
+            </article>
+          ))}
+        </div>
+        <p className="shop-small">Sono preordini: non paghi niente e non ti impegni. Mi servono per capire quanti funghi coltivare.</p>
+      </section>
+
       <div className="shop-notice" role="note">
         <span className="shop-tag">Listino provvisorio</span>
         <span>Raccolgo <b>preordini e manifestazioni di interesse</b>: la vendita partirà dopo la registrazione all'ASL. I prezzi sono indicativi e mi aiutano a capire cosa vi serve.</span>
@@ -67,7 +87,7 @@ export function PublicCatalog({ repo, nav }: { repo: Repo; nav: ShopNav }) {
         <section id="funghi" className="shop-section">
           <h2 className="shop-h2">I funghi</h2>
           <ul className="shop-grid" aria-label="Varietà">
-            {items.map((v) => <Card key={v.id} v={v} />)}
+            {items.map((v) => <Card key={v.id} v={v} open={nav.open} />)}
           </ul>
           <p className="shop-small">{VARIED_DIET} Le indicazioni nutrizionali seguono il Reg. (CE) 1924/2006 e il Reg. (UE) 432/2012 e sono calcolate sui valori per 100 g di fungo crudo.</p>
         </section>
@@ -80,7 +100,10 @@ export function PublicCatalog({ repo, nav }: { repo: Repo; nav: ShopNav }) {
           <li><b>Dimmi i giorni</b> in cui vuoi la consegna: raccolgo due volte a settimana.</li>
           <li><b>Raccolgo e consegno</b> lo stesso giorno, con etichetta, nome scientifico e data di raccolta.</li>
         </ol>
-        <ContactButton />
+        <div className="shop-cta">
+          <button className="shop-btn big" type="button" onClick={() => nav.open('#/interesse')}>Dimmi cosa ti serve</button>
+          <ContactButton className="shop-link" />
+        </div>
       </section>
     </ShopShell>
   );
@@ -99,7 +122,7 @@ function HeroPhoto({ url, page }: { url: string; page: string }) {
 
 const SHOW_FIRST = ['Poche calorie', 'Fonte di proteine', 'Fonte di fibre'];
 
-function Card({ v }: { v: PublicVariety }) {
+function Card({ v, open }: { v: PublicVariety; open: (hash: string) => void }) {
   const [broken, setBroken] = useState(false);
   const days = daysToFirstHarvest(v);
   const priced = v.list.wholesale !== null || v.list.retail !== null;
@@ -145,6 +168,7 @@ function Card({ v }: { v: PublicVariety }) {
             <small>prezzo provvisorio</small>
           </>) : <span>Prezzo in definizione</span>}
         </div>
+        <a className="shop-want" href={`#/interesse?fungo=${encodeURIComponent(v.id)}`} onClick={(e) => { e.preventDefault(); open(`#/interesse?fungo=${encodeURIComponent(v.id)}`); }}>Mi interessa →</a>
       </div>
     </li>
   );

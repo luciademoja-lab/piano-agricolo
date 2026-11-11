@@ -5,6 +5,7 @@ import type { DateStr } from '../lib/dates';
 import type { ExpenseKind, Farm, PlantingInput, Settings } from '../lib/plan';
 import type { ApplyResult, RuleChange, Rules } from '../lib/rules';
 import type { Param, PublicVariety, Variety, VarietyRow } from '../lib/pricing';
+import type { Interest, InterestInput, InterestOption, InterestStatus } from '../lib/interest';
 
 export type Role = 'admin' | 'viewer';
 export type Profile = { id: string; username: string; fullName: string; role: Role; active: boolean };
@@ -54,6 +55,19 @@ export interface Repo {
   publishPrices(id: string, wholesale: number | null, retail: number | null): Promise<void>;
   /** admin: changes a price parameter; the source is required */
   setParam(key: string, value: number, source: string, url: string | null, date: DateStr | null): Promise<void>;
+
+  /** Questionario: anyone, without signing in. The mushrooms to choose from, the sellable ones first. */
+  loadInterestOptions(): Promise<InterestOption[]>;
+  /** Questionario: anyone, without signing in, sends a request; returns its id. Nobody but the admin can read it back. */
+  submitInterest(i: InterestInput): Promise<string>;
+  /** admin: every request, newest first (they hold personal data: the read-only login gets none) */
+  loadInterests(): Promise<Interest[]>;
+  /** admin: where a request stands, and a note */
+  updateInterest(id: string, status: InterestStatus, note: string): Promise<void>;
+  /** admin: this person (their email) does not want updates any more */
+  stopInterestUpdates(id: string): Promise<void>;
+  /** admin: deletes every request with this person's email; returns how many */
+  deleteInterest(id: string): Promise<number>;
 
   /** Regolamenti: everyone signed in reads them, viewers included */
   loadRules(): Promise<Rules>;

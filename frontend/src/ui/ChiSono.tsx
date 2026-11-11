@@ -40,7 +40,10 @@ export function ChiSono({ nav }: { nav: ShopNav }) {
           <li><b>Raccolta e consegna lo stesso giorno.</b> Il fungo non passa da magazzini né da celle frigo di altri.</li>
         </ul>
         <p className="shop-honest">Una laurea non è un'autorizzazione: la vendita partirà solo dopo la registrazione all'ASL come produttrice. Fino ad allora raccolgo preordini e manifestazioni di interesse.</p>
-        <ContactButton />
+        <div className="shop-cta">
+          <button className="shop-btn big" type="button" onClick={() => nav.open('#/interesse')}>Preordina senza impegno</button>
+          <ContactButton className="shop-link" />
+        </div>
       </section>
     </ShopShell>
   );
