@@ -1,6 +1,7 @@
 // Cornice delle pagine pubbliche: intestazione con il menu (Funghi · Chi sono · Accedi) e piè di pagina.
 import { useEffect, type ReactNode } from 'react';
 import { BRAND } from '../lib/brand';
+import { markSvg } from '../lib/mark';
 import '../shop.css';
 
 export type ShopNav = { page: 'catalogo' | 'chi-sono' | 'interesse'; signedIn: boolean; open: (hash: string) => void };
@@ -15,7 +16,7 @@ export function ShopShell({ nav, children }: { nav: ShopNav; children: ReactNode
     <div className="shop">
       <header className="shop-top">
         <a className="shop-brand" href="#/catalogo" onClick={(e) => { e.preventDefault(); nav.open('#/catalogo'); }}>
-          <span className="shop-mark" aria-hidden="true"><Mushroom /></span>
+          <span className="shop-mark" aria-hidden="true" dangerouslySetInnerHTML={{ __html: markSvg('colore', 'shop-mark') }} />
           <span>
             <span className="shop-name">{BRAND.name}</span>
             <span className="shop-place">{BRAND.place}</span>
@@ -34,15 +35,6 @@ export function ShopShell({ nav, children }: { nav: ShopNav; children: ReactNode
         <p>Foto da Wikimedia Commons, con licenza libera: autore e licenza nella pagina di ogni foto. Valori nutrizionali da USDA FoodData Central, fonte indicata sotto ogni fungo.</p>
       </footer>
     </div>
-  );
-}
-
-export function Mushroom({ size = 30 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 32 32" width={size} height={size}>
-      <path d="M4 15c0-6 5.4-10 12-10s12 4 12 10c0 1.2-.9 2-2 2H6c-1.1 0-2-.8-2-2Z" fill="currentColor" />
-      <path d="M12.5 17h7l1 9.2c.1.9-.6 1.8-1.6 1.8h-5.8c-1 0-1.7-.9-1.6-1.8l1-9.2Z" fill="currentColor" opacity=".55" />
-    </svg>
   );
 }
 

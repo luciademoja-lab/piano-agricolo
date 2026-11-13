@@ -378,6 +378,48 @@ describe('Le mie cose da fare (admin)', () => {
   });
 });
 
+describe('Marchio', () => {
+  it('gives the logo as vector and picture files, with the colours of the kit', async () => {
+    await signIn();
+    await tab('Marchio').click();
+    await page.getByRole('heading', { name: 'Il logo' }).waitFor();
+    expect(await page.locator('.logo-card').count()).toBe(3);
+    const [svg] = await Promise.all([page.waitForEvent('download'), page.locator('.logo-card').first().getByRole('button', { name: 'Scarica SVG' }).click()]);
+    expect(svg.suggestedFilename()).toBe('logo-orizzontale-colore.svg');
+    const text = await readFile(await svg.path());
+    expect(String(text)).toMatch(/^<svg xmlns/);
+    expect(String(text)).not.toContain('<text');
+    const [png] = await Promise.all([page.waitForEvent('download'), page.locator('.logo-card').last().getByRole('button', { name: 'Scarica PNG' }).click()]);
+    expect(png.suggestedFilename()).toBe('logo-simbolo-colore.png');
+    await page.getByLabel('Nome').fill('Funghi della Piana');
+    await page.getByRole('img', { name: /Funghi della Piana/ }).first().waitFor();
+    await page.getByText('#a4532f').waitFor();
+  });
+  it('makes a post from a mushroom or an offer, with its text ready to paste', async () => {
+    await signIn();
+    await tab('Marchio').click();
+    await page.getByRole('button', { name: 'Post per i social' }).click();
+    const caption = page.getByLabel('Testo del post');
+    await expect.poll(() => caption.inputValue()).toMatch(/#cinquefrondi/);
+    await page.getByLabel("Un'offerta").check();
+    await expect.poll(() => caption.inputValue()).toMatch(/^L'abbonamento fresco di giornata/);
+    await caption.fill('Compra subito!');
+    await page.getByText(/una parola da evitare/).waitFor();
+    const [img] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: "Scarica l'immagine" }).click()]);
+    expect(img.suggestedFilename()).toBe('post-offerta-ristorante.png');
+  });
+  it('prints business cards and flyers with the QR code of the questionnaire', async () => {
+    await signIn();
+    await tab('Marchio').click();
+    await page.getByRole('button', { name: 'Biglietto e volantino' }).click();
+    await page.getByText(/#\/interesse/).first().waitFor();
+    expect(await page.locator('.sheet-preview .card').count()).toBe(10);
+    await page.getByRole('button', { name: 'Volantini A5' }).click();
+    expect(await page.locator('.sheet-preview .flyer').count()).toBe(2);
+    expect(await page.locator('.sheet-preview .flyer-qr svg').count()).toBe(2);
+  });
+});
+
 describe('read-only login', () => {
   it('sees the plan and cannot change it', async () => {
     await signIn('socio');

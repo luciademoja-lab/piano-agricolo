@@ -1,6 +1,7 @@
 /* Pagine pubbliche, versione 2 (caricato da ui/Shop.tsx, dopo styles.css). */.shop{gap:28px}
 .shop-top{position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--s-bg) 92%, transparent); backdrop-filter:blur(6px); margin:-20px calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 0; padding:12px max(16px, env(safe-area-inset-left, 0px)); border-bottom:1px solid transparent}
 .shop-brand{text-decoration:none; color:inherit}
+.shop-mark svg{width:34px; height:34px}
 .shop-brand > span:last-child{display:flex; flex-direction:column}
 .shop-nav{display:flex; align-items:center; gap:4px 16px; flex-wrap:wrap; justify-content:flex-end}
 .shop-nav a{text-decoration:none; font-weight:600; font-size:15px; color:var(--s-ink); padding:8px 2px; border-bottom:2px solid transparent}

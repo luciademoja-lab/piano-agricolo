@@ -1,0 +1,94 @@
+/* Scheda Marchio: logo e colori, post per i social, biglietti e volantini da stampare. */
+.brandpage{display:flex; flex-direction:column; gap:16px}
+.brandpage h3{font-family:var(--f-display); font-size:16px; margin:8px 0 0}
+.brand-names{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:flex-end}
+.brand-names label{display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; color:var(--muted); flex:1 1 220px; max-width:340px}
+.brand-names input{font:inherit; font-size:14px; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:7px 9px}
+.brand-names p{flex:1 1 100%; margin:0; font-size:12px}
+.brand-section{display:flex; flex-direction:column; gap:12px}
+.brand-section > p{margin:0; max-width:80ch}
+.brand-row{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
+.brandpage .seg{flex-wrap:wrap}
+.small{font-size:12px}
+
+.logo-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px}
+.logo-card{margin:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); display:flex; flex-direction:column}
+.logo-art{display:flex; align-items:center; justify-content:center; min-height:180px; padding:20px; background:#f5efe4}
+.logo-card.mono .logo-art{background:#fff}
+.logo-art svg{max-width:100%; height:auto; max-height:150px}
+.logo-card figcaption{display:flex; flex-direction:column; gap:4px; padding:10px 12px 12px; font-size:13px; border-top:1px solid var(--line)}
+.logo-actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px}
+
+.swatches{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:10px}
+.swatches li{display:flex; gap:10px; align-items:flex-start; font-size:13px}
+.swatch{flex:none; width:44px; height:44px; border-radius:8px; border:1px solid var(--line)}
+.typefaces{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.typefaces li{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; font-size:13px}
+.tf-serif{font-family:"Brand Serif", Fraunces, Georgia, serif; font-weight:700; font-size:24px}
+.tf-sans{font-family:"Brand Sans", "Public Sans", Arial, sans-serif; font-weight:600; font-size:20px}
+
+.post-maker{display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 380px); gap:20px; align-items:start}
+.post-controls{display:flex; flex-direction:column; gap:12px; min-width:0}
+.post-controls fieldset{border:1px solid var(--line); border-radius:8px; padding:8px 12px 10px; margin:0; display:flex; flex-direction:column; gap:4px}
+.post-controls legend{font-size:12px; font-weight:600; color:var(--muted); padding:0 4px}
+.post-controls .choice{display:flex; gap:8px; align-items:center; font-size:14px}
+.post-controls fieldset p{margin:4px 0 0}
+.post-controls > label{display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; color:var(--muted)}
+.post-controls select, .post-controls textarea{font:inherit; font-size:14px; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:7px 9px; width:100%}
+.post-controls textarea{font-size:13px; line-height:1.45; resize:vertical}
+.post-photo{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px}
+.post-photo label.btn{cursor:pointer}
+.post-preview{position:sticky; top:12px}
+.post-preview canvas{display:block; width:100%; height:auto; border-radius:10px; border:1px solid var(--line); background:#f5efe4}
+@media (max-width:760px){ .post-maker{grid-template-columns:1fr} .post-preview{position:static; max-width:380px} }
+
+/* I fogli da stampare: misure vere, in millimetri. A schermo si vedono rimpiccioliti. */
+.sheet-preview{overflow:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface-2); padding:16px}
+.sheet-preview .sheet{zoom:.5; box-shadow:0 2px 12px rgba(0,0,0,.15); margin:0 auto}
+@media (max-width:760px){ .sheet-preview .sheet{zoom:.32} }
+.sheet{background:#fff; color:#2b241c; font-family:"Brand Sans", "Public Sans", Arial, sans-serif; box-sizing:border-box; overflow:hidden}
+.sheet *{box-sizing:border-box}
+.art{display:block; line-height:0}
+.art svg{width:100%; height:100%}
+
+.sheet.cards{width:210mm; height:297mm; padding:11mm 20mm; display:grid; grid-template-columns:85mm 85mm; grid-auto-rows:55mm}
+.card{position:relative; padding:5mm 5mm 4.5mm; display:flex; flex-direction:column; justify-content:space-between; outline:.2mm dashed #c9c2b6; outline-offset:-.1mm}
+.card-logo{height:13mm; width:auto}
+.card-logo svg{width:auto; height:13mm}
+.card-foot{display:flex; justify-content:space-between; align-items:flex-end; gap:3mm}
+.card-contacts{display:flex; flex-direction:column; gap:.6mm; font-size:7.5pt; line-height:1.25; min-width:0}
+.card-url{color:#4f5d2f; font-weight:600; font-size:6.8pt; word-break:break-all}
+.card-qr{flex:none; width:19mm; display:flex; flex-direction:column; align-items:center; gap:.6mm; font-size:6pt; font-weight:700; color:#a4532f; text-transform:uppercase; letter-spacing:.06em}
+.card-qr .art{width:19mm; height:19mm}
+
+.sheet.flyers{width:297mm; height:210mm; display:grid; grid-template-columns:148.5mm 148.5mm}
+.flyer{padding:12mm 12mm 9mm; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4.5mm; outline:.2mm dashed #c9c2b6; outline-offset:-.1mm}
+.flyer-logo{height:38mm}
+.flyer-logo svg{width:auto; height:38mm}
+.flyer-kicker{color:#a4532f; font-weight:700; font-size:7.5pt; letter-spacing:.14em; text-transform:uppercase}
+.flyer h1{font-family:"Brand Serif", Fraunces, Georgia, serif; font-weight:700; font-size:25pt; line-height:1.08; margin:0; color:#2b241c; max-width:118mm}
+.flyer-lead{margin:0; font-size:10.5pt; line-height:1.45; max-width:112mm}
+.flyer-offers{display:grid; grid-template-columns:1fr 1fr; gap:3mm; width:100%; text-align:left}
+.flyer-offers > div{border:.3mm solid #e3d7c3; border-top:1.2mm solid #a4532f; border-radius:2mm; padding:3mm 3.5mm; display:flex; flex-direction:column; gap:1.4mm; font-size:8.8pt; line-height:1.38}
+.flyer-offers > div:nth-child(2){border-top-color:#4f5d2f}
+.flyer-offers b{font-family:"Brand Serif", Fraunces, Georgia, serif; font-size:12.5pt; line-height:1.15}
+.flyer-offers i{font-style:normal; font-weight:600; color:#4f5d2f}
+.flyer-who{font-size:6.5pt; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#6e6253}
+.flyer-qr{display:flex; align-items:center; gap:4mm; text-align:left; margin-top:auto}
+.flyer-qr .art{flex:none; width:36mm; height:36mm}
+.flyer-qr > div{display:flex; flex-direction:column; gap:1.4mm; font-size:9pt}
+.flyer-qr b{font-family:"Brand Serif", Fraunces, Georgia, serif; font-size:14pt; line-height:1.2}
+.flyer-qr .mono{font-family:"Brand Sans", "Public Sans", Arial, sans-serif; font-weight:600; color:#4f5d2f; word-break:break-all}
+.flyer-small{margin:0; font-size:7pt; color:#6e6253; line-height:1.35}
+
+.print-root{display:none}
+@media print{
+  html, body.printing{background:#fff !important; margin:0 !important; padding:0 !important; height:auto}
+  body.printing > :not(.print-root){display:none !important}
+  body.printing > .print-root{display:block}
+  .print-root .sheet{zoom:1; box-shadow:none; break-after:avoid}
+  /* a hair shorter than the paper, so rounding never spills onto a second, empty page */
+  .print-root .sheet.cards{height:296mm}
+  .print-root .sheet.flyers{height:209mm}
+  .print-root .card, .print-root .flyer{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+}

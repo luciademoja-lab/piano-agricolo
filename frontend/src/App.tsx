@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { withRefresh } from './data/refresh';
 import { loadErrorText, type People, type Repo } from './data/repo';
 import type { Farm } from './lib/plan';
@@ -21,6 +21,9 @@ import { ChiSono } from './ui/ChiSono';
 import { InterestForm } from './ui/InterestForm';
 import { InterestsPage } from './ui/InterestsPage';
 import { TABS, parseHash, publicPage, routeHash, type Route } from './lib/route';
+
+// the brand tools carry fonts and a font reader: loaded only when the tab is opened
+const BrandPage = lazy(() => import('./ui/BrandPage').then((m) => ({ default: m.BrandPage })));
 
 export function App({ repo }: { repo: Repo }) {
   const [uid, setUid] = useState<string | null | undefined>(undefined);
@@ -136,6 +139,7 @@ function SignedIn({ repo: base }: { repo: Repo }) {
         {route.tab === 'task' && <TasksPage {...props} filter={route.filter} refreshKey={tick} />}
         {route.tab === 'funghi' && <FunghiPage repo={repo} isAdmin={isAdmin} refreshKey={tick} />}
         {route.tab === 'richieste' && <InterestsPage repo={repo} isAdmin={isAdmin} refreshKey={tick} />}
+        {route.tab === 'marchio' && <Suspense fallback={<p className="muted">Caricamento…</p>}><BrandPage repo={repo} /></Suspense>}
         {route.tab === 'regolamenti' && <RulesPage repo={repo} me={me} profiles={people.profiles} refreshKey={tick} />}
         {route.tab === 'impostazioni' && <SettingsPage {...props} />}
       </main>

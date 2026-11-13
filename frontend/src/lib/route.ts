@@ -8,6 +8,7 @@ export const TABS = [
   { id: 'task', label: 'Task' },
   { id: 'funghi', label: 'Funghi' },
   { id: 'richieste', label: 'Richieste' },
+  { id: 'marchio', label: 'Marchio' },
   { id: 'regolamenti', label: 'Regolamenti' },
   { id: 'impostazioni', label: 'Impostazioni' },
 ] as const;

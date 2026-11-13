@@ -39,6 +39,15 @@ La coltura entra nel piano e si apre la sua pagina: prospetto, spesa iniziale, p
 - Tutti i numeri (varietà e parametri) sono nel database con fonte e data, modificabili dall'admin. La prima versione è `backend/supabase/seed/funghi_v1.json`; dopo averlo cambiato, `npm run funghi:sql` rigenera la migrazione. Le modifiche fatte dalla dashboard non vengono sovrascritte.
 - Chi vede cosa lo decide il database: senza login si legge solo `catalog_public()` (nomi, cucina, foto, tempi, listino pubblicato); costi, fornitori e fonti solo admin e sola lettura. Una specie fuori dall'elenco di quelle vendibili (DPR 376/95) non può entrare nel catalogo pubblico.
 
+## Marchio (logo, post, stampe)
+
+La scheda **Marchio** fa dentro l'app quello che fanno i servizi di branding in abbonamento, senza abbonamento.
+
+- **Logo e colori**: logo originale (un fungo il cui cappello è anche un sole che sorge) in tre forme (orizzontale, verticale, solo simbolo) e tre versioni (a colori, su fondo oliva, a un colore). Si scarica in **SVG** vettoriale, con le scritte trasformate in tracciati (si apre uguale ovunque, va bene per la tipografia), e in **PNG**. Nome e sottotitolo si cambiano dalla scheda. Colori e caratteri del kit sono in `frontend/src/lib/brandkit.ts`.
+- **Post per i social**: immagini 1080×1350, 1080×1080 o 1080×1920 da tre modelli (la storia di un fungo, raccolti stamattina, un'offerta), con la foto del catalogo (il nome dell'autore resta sull'immagine) o una tua. Il testo del post si scrive da solo dalle storie e dalle offerte e segue le stesse regole: niente promesse sulla salute, niente "compra" finché la vendita non parte.
+- **Biglietto e volantino**: 10 biglietti da 85×55 mm o 2 volantini A5 su un A4, con il QR code che porta al questionario dei preordini. Si stampano o si salvano in PDF dal browser (dimensioni effettive, 100%).
+- I caratteri (Fraunces e Public Sans, licenza OFL) sono dentro l'app, da `@fontsource`; le scritte del logo diventano tracciati con `opentype.js`; il QR code viene da `qrcode-generator`. La scheda si carica solo quando la apri.
+
 ## Da dove vengono i numeri
 
 Il catalogo delle colture è in `backend/supabase/seed/catalog_v1.json`.
