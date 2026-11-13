@@ -5,3 +5,6 @@ dist
 backend/supabase/.temp
 backend/supabase/.branches
 CLAUDE.md
+
+docs/
+.DS_Store
